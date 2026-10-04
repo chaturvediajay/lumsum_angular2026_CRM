@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { ChangeDetectorRef, Component, OnInit } from "@angular/core";
 import {
   FormBuilder,
   FormGroup,
@@ -51,6 +51,7 @@ export class Login implements OnInit {
     private commonHttp: CommonHttp,
     private userService: UserService,
     private sessionSync: SessionSyncService,
+    private cdr: ChangeDetectorRef,
   ) {
     this.loginForm = this.formBuilder.group({
       email: [
@@ -84,6 +85,7 @@ export class Login implements OnInit {
         this.errorMessage =
           "Server is down: The backend application or service is stopped or crashed or Backend server connection refused";
       }
+      this.cdr.detectChanges();
     });
 
     if (this.userService.isTokenValid()) {
@@ -110,6 +112,7 @@ export class Login implements OnInit {
 
   togglePasswordVisibility(): void {
     this.showPassword = !this.showPassword;
+    this.cdr.detectChanges();
   }
 
   getPasswordFieldType(): string {
@@ -134,10 +137,12 @@ export class Login implements OnInit {
     }
 
     this.isLoading = true;
+    this.cdr.detectChanges();
     try {
       const loginSuccess = await this.getLoginUser();
       if (loginSuccess) {
         this.successMessage = "Login successful! Redirecting...";
+        this.cdr.detectChanges();
         console.log("Login process completed successfully");
       } else {
         this.errorMessage =
@@ -158,6 +163,7 @@ export class Login implements OnInit {
       console.error("Login error:", error);
     } finally {
       this.isLoading = false;
+      this.cdr.detectChanges();
     }
   }
 
