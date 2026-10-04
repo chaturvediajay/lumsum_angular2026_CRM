@@ -1,0 +1,110 @@
+<app-dashboard-layout>
+  <div class="reports-container">
+    <!-- Header Section -->
+    <div class="page-header">
+      <div>
+        <h2 class="page-title">📊 CRM Analytics & Performance Reports</h2>
+        <p class="page-subtitle">Examine sales velocity, lead conversion efficiency, and pipeline stage health</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-outline-secondary" (click)="resetDemo()">
+          🔄 Reset Sample CRM Data
+        </button>
+      </div>
+    </div>
+
+    @if (stats) {
+    <!-- Top Executive KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-icon">💰</span>
+        <div>
+          <span class="kpi-label">Active Pipeline</span>
+          <h3 class="kpi-val">${{ stats.totalPipelineValue.toLocaleString() }}</h3>
+          <span class="kpi-sub">{{ stats.activeDealsCount }} active opportunities</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-icon">🏆</span>
+        <div>
+          <span class="kpi-label">Closed Won Revenue</span>
+          <h3 class="kpi-val highlight-green">${{ stats.wonRevenue.toLocaleString() }}</h3>
+          <span class="kpi-sub">{{ stats.wonDealsCount }} won contracts</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-icon">🎯</span>
+        <div>
+          <span class="kpi-label">Deal Win Rate</span>
+          <h3 class="kpi-val highlight-blue">{{ stats.winRate }}%</h3>
+          <span class="kpi-sub">Closed won vs closed lost</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-icon">⚡</span>
+        <div>
+          <span class="kpi-label">Lead Conversion Rate</span>
+          <h3 class="kpi-val highlight-purple">{{ stats.leadConversionRate }}%</h3>
+          <span class="kpi-sub">{{ stats.qualifiedLeadsCount }} of {{ stats.totalLeadsCount }} leads qualified</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts & Funnel Breakdown Grid -->
+    <div class="charts-grid">
+      <!-- Funnel Card -->
+      <div class="chart-card">
+        <div class="card-header">
+          <h4>Sales Pipeline Stage Distribution</h4>
+          <span class="header-sub">Volume & value by pipeline phase</span>
+        </div>
+        <div class="funnel-list">
+          @for (item of stats.stageDistribution; track item.stage) {
+          <div class="funnel-row">
+            <div class="funnel-label-col">
+              <strong class="stage-name">{{ item.stage }}</strong>
+              <span class="stage-meta">{{ item.count }} deals (${{ item.value.toLocaleString() }})</span>
+            </div>
+            <div class="funnel-bar-col">
+              <div class="funnel-bar-bg">
+                <div
+                  class="funnel-bar-fill"
+                  [style.width.%]="stats.totalPipelineValue > 0 ? (item.value / stats.totalPipelineValue * 100) : 10"
+                ></div>
+              </div>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Lead Sources Breakdown -->
+      <div class="chart-card">
+        <div class="card-header">
+          <h4>Lead Acquisition Channels</h4>
+          <span class="header-sub">Where high-value prospects originate</span>
+        </div>
+        <div class="sources-list">
+          @for (src of stats.leadsBySource; track src.source) {
+          <div class="source-row">
+            <div class="source-info">
+              <span class="source-name">{{ src.source }}</span>
+              <strong class="source-count">{{ src.count }} leads</strong>
+            </div>
+            <div class="progress-bar-bg">
+              <div
+                class="progress-bar-fill"
+                [style.width.%]="(src.count / stats.totalLeadsCount) * 100"
+              ></div>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+    }
+  </div>
+</app-dashboard-layout>

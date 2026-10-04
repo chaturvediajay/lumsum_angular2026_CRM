@@ -1,0 +1,300 @@
+<app-dashboard-layout>
+  <div class="dashboard-container dashboard-shell">
+    <!-- Welcome / Hero Header Banner -->
+    <section class="dashboard-hero">
+      <div class="hero-content">
+        <div class="hero-badge-tag">
+          <span class="pulse-dot"></span>
+          <span>CRM Intelligence & Real-Time Analytics</span>
+        </div>
+        <h1 class="hero-heading">Welcome back, {{ userName }}! 👋</h1>
+        <p class="hero-subheading">
+          Track high-probability deals, accelerate qualified pipeline conversions, and maintain strong
+          customer relationships across your enterprise accounts.
+        </p>
+        <div class="hero-actions">
+          <a routerLink="/leads" class="btn-hero-primary">
+            <span>🎯</span>
+            <span>+ Add New Lead</span>
+          </a>
+          <a routerLink="/deals" class="btn-hero-secondary">
+            <span>📈</span>
+            <span>View Sales Pipeline</span>
+          </a>
+          <a routerLink="/reports" class="btn-hero-glass">
+            <span>📊</span>
+            <span>Analytics Reports</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="hero-stat-card">
+        <div class="win-rate-circle">
+          <span class="rate-value">{{ crmStats ? crmStats.winRate : 0 }}%</span>
+          <span class="rate-label">Win Rate</span>
+        </div>
+        <div class="stat-detail">
+          <span class="stat-highlight text-emerald">Active Sales Momentum</span>
+          <span class="stat-subtext">Based on closed won contracts</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 KPI Metrics Grid -->
+    @if (crmStats) {
+    <section class="kpi-grid">
+      <!-- Card 1: Active Pipeline -->
+      <article class="kpi-card card-blue">
+        <div class="kpi-card-header">
+          <span class="kpi-label">Active Pipeline Value</span>
+          <div class="kpi-icon-box icon-blue">💰</div>
+        </div>
+        <div class="kpi-card-body">
+          <h3 class="kpi-value">${{ crmStats.totalPipelineValue.toLocaleString() }}</h3>
+          <div class="kpi-footer">
+            <span class="kpi-badge badge-blue">
+              <span>●</span> {{ crmStats.activeDealsCount }} Active Deals
+            </span>
+            <span class="kpi-subtext">In sales funnel</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Card 2: Won Revenue -->
+      <article class="kpi-card card-emerald">
+        <div class="kpi-card-header">
+          <span class="kpi-label">Closed Won Revenue</span>
+          <div class="kpi-icon-box icon-emerald">🏆</div>
+        </div>
+        <div class="kpi-card-body">
+          <h3 class="kpi-value">${{ crmStats.wonRevenue.toLocaleString() }}</h3>
+          <div class="kpi-footer">
+            <span class="kpi-badge badge-emerald">
+              <span>↑</span> +{{ crmStats.wonDealsCount }} Closed Won
+            </span>
+            <span class="kpi-subtext">YTD revenue</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Card 3: Total Leads -->
+      <article class="kpi-card card-purple">
+        <div class="kpi-card-header">
+          <span class="kpi-label">Total Leads</span>
+          <div class="kpi-icon-box icon-purple">🎯</div>
+        </div>
+        <div class="kpi-card-body">
+          <h3 class="kpi-value">{{ crmStats.totalLeadsCount }}</h3>
+          <div class="kpi-footer">
+            <span class="kpi-badge badge-purple">
+              <span>⚡</span> {{ crmStats.leadConversionRate }}% Conversion
+            </span>
+            <span class="kpi-subtext">{{ crmStats.qualifiedLeadsCount }} Qualified</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Card 4: Client Accounts -->
+      <article class="kpi-card card-amber">
+        <div class="kpi-card-header">
+          <span class="kpi-label">Enterprise Accounts</span>
+          <div class="kpi-icon-box icon-amber">🏢</div>
+        </div>
+        <div class="kpi-card-body">
+          <h3 class="kpi-value">{{ crmStats.totalCustomersCount }}</h3>
+          <div class="kpi-footer">
+            <span class="kpi-badge badge-amber">
+              <span>★</span> Active Accounts
+            </span>
+            <span class="kpi-subtext">Verified clients</span>
+          </div>
+        </div>
+      </article>
+    </section>
+    }
+
+    <!-- Two-Column Layout for Pipeline & Activities -->
+    <div class="dashboard-split-layout">
+      <!-- Left Major Column -->
+      <div class="split-col-main">
+        <!-- Pipeline Stage Breakdown Widget -->
+        @if (crmStats && crmStats.stageDistribution && crmStats.stageDistribution.length > 0) {
+        <section class="content-panel">
+          <div class="panel-header">
+            <div>
+              <span class="panel-eyebrow">Pipeline Flow</span>
+              <h2 class="panel-title">Deal Distribution by Stage</h2>
+            </div>
+            <a routerLink="/deals" class="panel-action-link">
+              <span>Open Pipeline</span>
+              <span>→</span>
+            </a>
+          </div>
+
+          <div class="pipeline-stage-bars">
+            @for (item of crmStats.stageDistribution; track item.stage) {
+            <div class="stage-bar-item">
+              <div class="stage-bar-meta">
+                <div class="stage-name-wrap">
+                  <span class="stage-indicator-badge" [ngClass]="getStageBadgeClass(item.stage)">
+                    {{ item.stage }}
+                  </span>
+                  <span class="stage-deal-count">({{ item.count }} {{ item.count === 1 ? 'deal' : 'deals' }})</span>
+                </div>
+                <span class="stage-value-amount">${{ item.value.toLocaleString() }}</span>
+              </div>
+              <div class="progress-track">
+                <div
+                  class="progress-fill"
+                  [ngClass]="getStageBadgeClass(item.stage)"
+                  [style.width.%]="crmStats.totalPipelineValue > 0 ? (item.value / crmStats.totalPipelineValue) * 100 : 0"
+                ></div>
+              </div>
+            </div>
+            }
+          </div>
+        </section>
+        }
+
+        <!-- Priority Activities & Follow-ups -->
+        <section class="content-panel">
+          <div class="panel-header">
+            <div>
+              <span class="panel-eyebrow">Action Required</span>
+              <h2 class="panel-title">Priority Follow-ups & Deliverables</h2>
+            </div>
+            <a routerLink="/activities" class="panel-action-link">
+              <span>View All Tasks</span>
+              <span>→</span>
+            </a>
+          </div>
+
+          <div class="tasks-container">
+            @if (priorityTasks.length === 0) {
+            <div class="empty-tasks-state">
+              <span class="empty-icon">🎉</span>
+              <h4>All caught up!</h4>
+              <p>No urgent pending activities on your radar today.</p>
+              <a routerLink="/activities" class="btn-outline-sm">Schedule Activity</a>
+            </div>
+            }
+
+            @for (task of priorityTasks; track task.id) {
+            <div class="task-card-row">
+              <div class="task-checkbox-wrap">
+                <input
+                  type="checkbox"
+                  class="form-check-input custom-checkbox"
+                  [checked]="task.completed"
+                  (change)="toggleTask(task.id)"
+                  [id]="'task-' + task.id"
+                  [name]="'task_' + task.id"
+                  aria-label="Mark task as complete"
+                />
+              </div>
+
+              <div class="task-details">
+                <label [for]="'task-' + task.id" class="task-title-text">{{ task.title }}</label>
+                <div class="task-sub-meta">
+                  <span class="meta-link">
+                    <span>🔗</span> {{ task.relatedName }} ({{ task.relatedType }})
+                  </span>
+                  <span class="meta-due">
+                    <span>📅</span> Due {{ task.dueDate | date: 'mediumDate' }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="task-tags">
+                <span class="priority-tag" [ngClass]="getPriorityClass(task.priority)">
+                  {{ task.priority }}
+                </span>
+                <span class="activity-type-pill">{{ task.type }}</span>
+              </div>
+            </div>
+            }
+          </div>
+        </section>
+      </div>
+
+      <!-- Right Minor Column: Quick Actions & Recent Deals -->
+      <aside class="split-col-side">
+        <!-- Quick Action Tiles -->
+        <section class="content-panel">
+          <div class="panel-header">
+            <div>
+              <span class="panel-eyebrow">Shortcuts</span>
+              <h2 class="panel-title">Quick Actions</h2>
+            </div>
+          </div>
+
+          <div class="quick-actions-grid">
+            <a routerLink="/leads" class="quick-action-tile">
+              <div class="action-tile-icon icon-emerald-soft">🎯</div>
+              <div class="action-tile-text">
+                <strong class="tile-title">Add Leads</strong>
+                <span class="tile-desc">Import or qualify</span>
+              </div>
+            </a>
+
+            <a routerLink="/deals" class="quick-action-tile">
+              <div class="action-tile-icon icon-blue-soft">📈</div>
+              <div class="action-tile-text">
+                <strong class="tile-title">Sales Deals</strong>
+                <span class="tile-desc">Kanban pipeline</span>
+              </div>
+            </a>
+
+            <a routerLink="/customers" class="quick-action-tile">
+              <div class="action-tile-icon icon-purple-soft">🏢</div>
+              <div class="action-tile-text">
+                <strong class="tile-title">Client Base</strong>
+                <span class="tile-desc">Account directory</span>
+              </div>
+            </a>
+
+            <a routerLink="/activities" class="quick-action-tile">
+              <div class="action-tile-icon icon-amber-soft">📅</div>
+              <div class="action-tile-text">
+                <strong class="tile-title">New Task</strong>
+                <span class="tile-desc">Log meeting / call</span>
+              </div>
+            </a>
+          </div>
+        </section>
+
+        <!-- Recent High-Value Opportunities -->
+        <section class="content-panel">
+          <div class="panel-header">
+            <div>
+              <span class="panel-eyebrow">Live Feed</span>
+              <h2 class="panel-title">Recent Deals</h2>
+            </div>
+            <a routerLink="/deals" class="panel-action-link">View Pipeline →</a>
+          </div>
+
+          <div class="recent-deals-list">
+            @if (recentDeals.length === 0) {
+            <p class="text-muted text-center py-3">No recent deals recorded yet.</p>
+            }
+
+            @for (deal of recentDeals; track deal.id) {
+            <div class="recent-deal-item">
+              <div class="deal-item-header">
+                <strong class="deal-item-title">{{ deal.title }}</strong>
+                <span class="deal-item-amount">${{ deal.amount.toLocaleString() }}</span>
+              </div>
+              <div class="deal-item-footer">
+                <span class="deal-company-name">🏢 {{ deal.companyName }}</span>
+                <span class="stage-badge-small" [ngClass]="getStageBadgeClass(deal.stage)">
+                  {{ deal.stage }}
+                </span>
+              </div>
+            </div>
+            }
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+</app-dashboard-layout>

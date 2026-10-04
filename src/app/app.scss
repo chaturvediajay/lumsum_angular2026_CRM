@@ -1,0 +1,171 @@
+// ========== INACTIVITY TIMEOUT MODAL STYLES ==========
+.idle-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: idleFadeIn 0.25s ease-out forwards;
+}
+
+.idle-modal-dialog {
+  background: #ffffff;
+  border-radius: 16px;
+  max-width: 460px;
+  width: 100%;
+  padding: 32px 28px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(226, 232, 240, 0.8);
+  text-align: center;
+  position: relative;
+  animation: idleSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.idle-modal-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #fef3c7;
+  border: 4px solid #fef9c3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px auto;
+
+  .idle-modal-icon {
+    font-size: 32px;
+    animation: idlePulse 2s infinite ease-in-out;
+  }
+}
+
+.idle-modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 10px 0;
+}
+
+.idle-modal-text {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0 0 18px 0;
+
+  strong {
+    color: #1e293b;
+  }
+}
+
+.idle-countdown-display {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  background: #fff1f2;
+  border: 2px solid #fecdd3;
+  padding: 10px 24px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+
+  .idle-countdown-number {
+    font-size: 40px;
+    font-weight: 800;
+    color: #e11d48;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .idle-countdown-unit {
+    font-size: 14px;
+    font-weight: 600;
+    color: #be123c;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+}
+
+.idle-modal-subtext {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0 0 24px 0;
+}
+
+.idle-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+
+  button {
+    flex: 1;
+    padding: 12px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    outline: none;
+  }
+
+  .idle-btn-logout {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+
+    &:hover {
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+  }
+
+  .idle-btn-stay {
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+
+    &:hover {
+      background: #1d4ed8;
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+@keyframes idleFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes idleSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes idlePulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}

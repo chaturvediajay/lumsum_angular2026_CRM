@@ -1,0 +1,291 @@
+<div class="admin-layout" [class.sidebar-is-collapsed]="sidebarCollapsed">
+  <!-- Mobile Drawer Backdrop -->
+  <div
+    class="sidebar-backdrop"
+    [class.show]="mobileDrawerOpen"
+    (click)="closeMobileDrawer()"
+    aria-hidden="true"
+  ></div>
+
+  <!-- Collapsible Dark Slate Sidebar -->
+  <aside
+    class="admin-sidebar"
+    [class.collapsed]="sidebarCollapsed"
+    [class.mobile-open]="mobileDrawerOpen"
+    aria-label="Sidebar Navigation"
+  >
+    <!-- Brand Header -->
+    <div class="sidebar-header">
+      <a routerLink="/home" class="sidebar-brand">
+        <div class="brand-logo-badge">
+          <span class="brand-logo-icon">📊</span>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">Lumsum CRM</span>
+          <span class="brand-subtitle">Enterprise Suite</span>
+        </div>
+      </a>
+
+      <!-- Mobile-only close button -->
+      <button
+        type="button"
+        class="mobile-close-btn d-lg-none"
+        (click)="closeMobileDrawer()"
+        aria-label="Close sidebar"
+      >
+        ✕
+      </button>
+    </div>
+
+    <!-- Navigation Sections -->
+    <nav class="sidebar-nav-container">
+      @for (section of getNavSections(); track section) {
+      <div class="nav-group">
+        <div class="nav-group-title">
+          <span>{{ section }}</span>
+        </div>
+
+        <ul class="nav-list">
+          @for (item of getNavItemsBySection(section); track item.route) {
+          <li class="nav-item">
+            <a
+              [routerLink]="item.route"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: item.route === '/home' }"
+              class="nav-link-btn"
+              (click)="closeMobileDrawer()"
+              [title]="sidebarCollapsed ? item.label : ''"
+            >
+              <span class="nav-item-icon">{{ item.icon }}</span>
+              <span class="nav-item-label">{{ item.label }}</span>
+              @if (item.badge) {
+              <span class="nav-item-badge" [ngClass]="'badge-' + (item.badgeVariant || 'primary')">
+                {{ item.badge }}
+              </span>
+              }
+            </a>
+          </li>
+          }
+        </ul>
+      </div>
+      }
+    </nav>
+
+    <!-- Sidebar Bottom User & Collapse Bar -->
+    <div class="sidebar-footer">
+      <div class="sidebar-user-card">
+        <div class="user-avatar-circle">
+          <span>{{ userName[0] | uppercase }}</span>
+        </div>
+        <div class="user-card-info">
+          <span class="user-card-name" [title]="userName">{{ userName }}</span>
+          <span class="user-card-role">{{ userRole }}</span>
+        </div>
+        <button
+          type="button"
+          class="sidebar-logout-btn"
+          (click)="logout()"
+          title="Sign out"
+          aria-label="Sign out"
+        >
+          <span>🚪</span>
+        </button>
+      </div>
+
+      <!-- Desktop Collapse Button -->
+      <button
+        type="button"
+        class="desktop-collapse-toggle d-none d-lg-flex"
+        (click)="toggleSidebar()"
+        [title]="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+        aria-label="Collapse sidebar"
+      >
+        <span class="collapse-icon">{{ sidebarCollapsed ? '➔' : '⬅' }}</span>
+        <span class="collapse-label">{{ sidebarCollapsed ? 'Expand' : 'Collapse Sidebar' }}</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Body Wrapper -->
+  <div class="admin-main-wrapper">
+    <!-- Elevated Modern Top Header -->
+    <header class="admin-topbar">
+      <!-- Left side: Hamburger + Breadcrumb -->
+      <div class="topbar-left">
+        <button
+          type="button"
+          class="btn-hamburger"
+          (click)="toggleSidebar()"
+          aria-label="Toggle navigation menu"
+        >
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+
+        <div class="topbar-breadcrumbs">
+          <span class="breadcrumb-badge">{{ currentRouteSection }}</span>
+          <span class="breadcrumb-separator">/</span>
+          <h2 class="breadcrumb-title">{{ currentRouteTitle }}</h2>
+        </div>
+      </div>
+
+      <!-- Center: Global Search Bar -->
+      <div class="topbar-search">
+        <span class="search-lens">🔍</span>
+        <input
+          id="global-search"
+          name="globalSearch"
+          type="text"
+          placeholder="Search leads, deals, contacts, or activities..."
+          aria-label="Search"
+          class="search-input"
+        />
+        <span class="search-kbd">⌘K</span>
+      </div>
+
+      <!-- Right side: Date, Notifications, Quick Action, Profile -->
+      <div class="topbar-right">
+        <!-- Date pill -->
+        <div class="topbar-date-pill d-none d-xl-flex">
+          <span class="pill-icon">🗓️</span>
+          <span>{{ currentDate }}</span>
+        </div>
+
+        <!-- AI Voice & Chat Assistant Button -->
+        <a
+          routerLink="/ai-assistant"
+          class="topbar-icon-btn ai-topbar-btn"
+          title="Open AI Voice & Chat Assistant"
+          aria-label="Open AI Assistant"
+        >
+          <span class="icon-glyph">🤖</span>
+        </a>
+
+        <!-- Notification Bell Dropdown -->
+        <div class="topbar-dropdown" (click)="$event.stopPropagation()">
+          <button
+            type="button"
+            class="topbar-icon-btn"
+            (click)="toggleNotifications($event)"
+            [class.active]="notificationsOpen"
+            title="Notifications"
+            aria-label="Notifications"
+          >
+            <span class="icon-glyph">🔔</span>
+            @if (unreadNotificationCount > 0) {
+            <span class="notification-indicator-dot"></span>
+            }
+          </button>
+
+          @if (notificationsOpen) {
+          <div class="dropdown-popover notifications-popover" role="dialog">
+            <div class="popover-header">
+              <div class="popover-header-title">
+                <strong>Notifications</strong>
+                <span class="unread-pill">{{ unreadNotificationCount }} new</span>
+              </div>
+              <button
+                type="button"
+                class="popover-action-btn"
+                (click)="markNotificationsRead()"
+              >
+                Mark all read
+              </button>
+            </div>
+            <div class="notifications-list">
+              @for (notif of notifications; track notif.id) {
+              <div class="notification-row" [class.unread]="!notif.read">
+                <div class="notification-dot-indicator"></div>
+                <div class="notification-row-content">
+                  <p class="notification-text">{{ notif.title }}</p>
+                  <span class="notification-time">{{ notif.time }}</span>
+                </div>
+              </div>
+              }
+            </div>
+            <div class="popover-footer">
+              <a routerLink="/activities" (click)="closeDropdowns()" class="popover-footer-link">
+                View all activities & logs →
+              </a>
+            </div>
+          </div>
+          }
+        </div>
+
+        <!-- Quick Action "+ New Deal" -->
+        <a routerLink="/deals" class="btn-quick-create d-none d-sm-inline-flex">
+          <span class="plus-symbol">+</span>
+          <span>New Deal</span>
+        </a>
+
+        <!-- User Profile Dropdown -->
+        <div class="topbar-dropdown" (click)="$event.stopPropagation()">
+          <button
+            type="button"
+            class="topbar-profile-trigger"
+            (click)="toggleUserDropdown($event)"
+            [class.active]="userDropdownOpen"
+            aria-label="User profile menu"
+          >
+            <div class="profile-avatar-mini">
+              <span>{{ userName[0] | uppercase }}</span>
+            </div>
+            <div class="profile-meta d-none d-md-flex">
+              <span class="profile-name-label">{{ userName }}</span>
+              <span class="profile-role-label">{{ userRole }}</span>
+            </div>
+            <span class="profile-chevron">▾</span>
+          </button>
+
+          @if (userDropdownOpen) {
+          <div class="dropdown-popover profile-popover" role="menu">
+            <div class="profile-card-summary">
+              <div class="profile-avatar-medium">
+                <span>{{ userName[0] | uppercase }}</span>
+              </div>
+              <div>
+                <strong class="d-block">{{ userName }}</strong>
+                <span class="text-muted small">{{ userRole }}</span>
+              </div>
+            </div>
+
+            <div class="popover-divider"></div>
+
+            <div class="popover-menu-links">
+              <a routerLink="/home" (click)="closeDropdowns()" class="popover-menu-item">
+                <span>🏠</span> CRM Dashboard
+              </a>
+              <a routerLink="/users" (click)="closeDropdowns()" class="popover-menu-item">
+                <span>👥</span> Team & Users
+              </a>
+              <a routerLink="/sessions" (click)="closeDropdowns()" class="popover-menu-item">
+                <span>🛡️</span> Active Sessions
+              </a>
+              <a routerLink="/reports" (click)="closeDropdowns()" class="popover-menu-item">
+                <span>📊</span> Performance Reports
+              </a>
+              <a (click)="checkTokenOnClick(true)" class="popover-menu-item" style="cursor: pointer;">
+                <span>🔑</span> Check Token Status
+              </a>
+            </div>
+
+            <div class="popover-divider"></div>
+
+            <button type="button" class="popover-logout-btn" (click)="logout()">
+              <span>🚪</span> Sign Out
+            </button>
+          </div>
+          }
+        </div>
+      </div>
+    </header>
+
+    <!-- Scrollable Main Content -->
+    <main class="admin-content-area">
+      <div class="content-wrapper-fluid">
+        <ng-content></ng-content>
+      </div>
+    </main>
+  </div>
+</div>

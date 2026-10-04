@@ -1,0 +1,305 @@
+<app-dashboard-layout>
+  <div class="deals-container">
+    <!-- Header Section -->
+    <div class="page-header">
+      <div>
+        <h2 class="page-title">📈 CRM Deals & Sales Pipeline</h2>
+        <p class="page-subtitle">Track opportunities across stages, accelerate deal velocity, and forecast revenue</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-primary" (click)="openCreateModal()">
+          <span class="btn-icon">➕</span> Create New Deal
+        </button>
+      </div>
+    </div>
+
+    <!-- Pipeline Summary Header -->
+    <div class="pipeline-summary-cards">
+      <div class="summary-card">
+        <span class="summary-label">Active Pipeline Value</span>
+        <h3 class="summary-val highlight-blue">${{ getTotalPipelineValue().toLocaleString() }}</h3>
+      </div>
+      <div class="summary-card">
+        <span class="summary-label">Won Revenue (YTD)</span>
+        <h3 class="summary-val highlight-green">${{ getWonRevenue().toLocaleString() }}</h3>
+      </div>
+      <div class="summary-card">
+        <span class="summary-label">Total Deals Tracked</span>
+        <h3 class="summary-val">{{ deals.length }} Deals</h3>
+      </div>
+    </div>
+
+    <!-- Controls Filter Bar -->
+    <div class="control-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input
+          id="deals-search"
+          name="dealsSearch"
+          type="text"
+          class="form-control"
+          placeholder="Filter deals by title, company, or contact..."
+          [(ngModel)]="searchTerm"
+        />
+      </div>
+
+      <div class="filter-group">
+        <label for="deals-filter-priority" class="filter-label">Priority:</label>
+        <select id="deals-filter-priority" name="dealsFilterPriority" class="form-select priority-select" [(ngModel)]="selectedPriority">
+          <option value="All">All Priorities</option>
+          <option value="High">🔥 High Priority</option>
+          <option value="Medium">⚡ Medium</option>
+          <option value="Low">💤 Low</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Kanban Board Grid -->
+    <div class="kanban-board">
+      @for (stage of stages; track stage) {
+      <div class="kanban-column" [class]="getStageBadgeClass(stage)">
+        <!-- Column Header -->
+        <div class="column-header">
+          <div class="column-title-row">
+            <h4>{{ stage }}</h4>
+            <span class="deal-count-badge">{{ getDealsByStage(stage).length }}</span>
+          </div>
+          <div class="column-value-sum">
+            ${{ getStageTotalValue(stage).toLocaleString() }}
+          </div>
+        </div>
+
+        <!-- Deals Card List -->
+        <div class="deals-list">
+          @if (getDealsByStage(stage).length === 0) {
+          <div class="empty-column-state">
+            <span>No deals in this stage</span>
+          </div>
+          }
+
+          @for (deal of getDealsByStage(stage); track deal.id) {
+          <div class="deal-card" (click)="openEditModal(deal)">
+            <div class="deal-card-header">
+              <span class="deal-company">{{ deal.companyName }}</span>
+              <span class="priority-tag" [class]="getPriorityBadgeClass(deal.priority)">
+                {{ deal.priority }}
+              </span>
+            </div>
+
+            <h5 class="deal-title">{{ deal.title }}</h5>
+
+            <div class="deal-metrics">
+              <span class="deal-amount">${{ deal.amount.toLocaleString() }}</span>
+              <span class="deal-prob">{{ deal.probability }}% prob</span>
+            </div>
+
+            <!-- Probability Bar -->
+            <div class="prob-bar-bg">
+              <div class="prob-bar-fill" [style.width.%]="deal.probability"></div>
+            </div>
+
+            <div class="deal-footer">
+              <span class="deal-date">📅 {{ deal.expectedCloseDate | date: 'shortDate' }}</span>
+              <span class="deal-rep">👤 {{ deal.assignedTo }}</span>
+            </div>
+
+            <!-- Stage Navigation Controls -->
+            <div class="stage-nav-bar" (click)="$event.stopPropagation()">
+              <button
+                type="button"
+                class="btn-stage-nav"
+                title="Move Back"
+                [disabled]="stage === 'Prospecting'"
+                (click)="moveToPrevStage(deal, $event)"
+              >
+                ◀
+              </button>
+
+              <div class="dropdown stage-dropdown">
+                <select
+                  [id]="'deal-stage-' + deal.id"
+                  [name]="'dealStage_' + deal.id"
+                  aria-label="Change deal stage"
+                  class="form-select form-select-sm stage-quick-select"
+                  [value]="deal.stage"
+                  (change)="moveDeal(deal, $any($event.target).value, $event)"
+                >
+                  @for (s of stages; track s) {
+                  <option [value]="s">{{ s }}</option>
+                  }
+                </select>
+              </div>
+
+              <button
+                type="button"
+                class="btn-stage-nav"
+                title="Move Forward"
+                [disabled]="stage === 'Closed Won' || stage === 'Closed Lost'"
+                (click)="moveToNextStage(deal, $event)"
+              >
+                ▶
+              </button>
+
+              <button
+                type="button"
+                class="btn-delete-deal"
+                title="Delete Deal"
+                (click)="deleteDeal(deal.id, $event)"
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+    </div>
+
+    <!-- Modal Form (Create / Edit Deal) -->
+    @if (showModal) {
+    <div class="modal-backdrop-custom" (click)="closeModal()">
+      <div class="modal-dialog-custom" (click)="$event.stopPropagation()">
+        <div class="modal-header-custom">
+          <h3>{{ isEditing ? 'Edit Deal' : 'Create New Opportunity' }}</h3>
+          <button type="button" class="close-btn" (click)="closeModal()">✕</button>
+        </div>
+
+        <form [formGroup]="dealForm" (ngSubmit)="saveDeal()">
+          <div class="modal-body-custom">
+            <div class="row g-3">
+              <!-- Title -->
+              <div class="col-12">
+                <label for="deal-title" class="form-label">Deal Title *</label>
+                <input
+                  id="deal-title"
+                  name="title"
+                  type="text"
+                  class="form-control"
+                  formControlName="title"
+                  placeholder="e.g. Enterprise Cloud Migration Contract"
+                  [class.is-invalid]="dealForm.get('title')?.invalid && dealForm.get('title')?.touched"
+                />
+              </div>
+
+              <!-- Customer Link or Name -->
+              @if (customers.length > 0 && !isEditing) {
+              <div class="col-12">
+                <label for="deal-customer-select" class="form-label">Select Customer Account (Optional)</label>
+                <select id="deal-customer-select" name="dealCustomerSelect" class="form-select" (change)="onCustomerSelect($event)">
+                  <option value="">-- Choose Existing Customer --</option>
+                  @for (c of customers; track c.id) {
+                  <option [value]="c.id">{{ c.companyName }} ({{ c.contactName }})</option>
+                  }
+                </select>
+              </div>
+              }
+
+              <!-- Company & Contact -->
+              <div class="col-md-6">
+                <label for="deal-company-name" class="form-label">Company Name *</label>
+                <input
+                  id="deal-company-name"
+                  name="companyName"
+                  type="text"
+                  class="form-control"
+                  formControlName="companyName"
+                  placeholder="e.g. Acme Global"
+                  autocomplete="organization"
+                  [class.is-invalid]="dealForm.get('companyName')?.invalid && dealForm.get('companyName')?.touched"
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="deal-customer-name" class="form-label">Contact Person *</label>
+                <input
+                  id="deal-customer-name"
+                  name="customerName"
+                  type="text"
+                  class="form-control"
+                  formControlName="customerName"
+                  placeholder="e.g. John Smith"
+                  autocomplete="name"
+                  [class.is-invalid]="dealForm.get('customerName')?.invalid && dealForm.get('customerName')?.touched"
+                />
+              </div>
+
+              <!-- Amount & Probability -->
+              <div class="col-md-6">
+                <label for="deal-amount" class="form-label">Deal Value ($) *</label>
+                <input
+                  id="deal-amount"
+                  name="amount"
+                  type="number"
+                  class="form-control"
+                  formControlName="amount"
+                  placeholder="50000"
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="deal-probability" class="form-label">Win Probability (%)</label>
+                <input
+                  id="deal-probability"
+                  name="probability"
+                  type="number"
+                  class="form-control"
+                  formControlName="probability"
+                  min="0"
+                  max="100"
+                />
+              </div>
+
+              <!-- Stage, Close Date, Priority -->
+              <div class="col-md-4">
+                <label for="deal-stage" class="form-label">Pipeline Stage</label>
+                <select id="deal-stage" name="stage" class="form-select" formControlName="stage">
+                  @for (s of stages; track s) {
+                  <option [value]="s">{{ s }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label for="deal-expected-close-date" class="form-label">Expected Close Date</label>
+                <input
+                  id="deal-expected-close-date"
+                  name="expectedCloseDate"
+                  type="date"
+                  class="form-control"
+                  formControlName="expectedCloseDate"
+                />
+              </div>
+              <div class="col-md-4">
+                <label for="deal-priority" class="form-label">Priority</label>
+                <select id="deal-priority" name="priority" class="form-select" formControlName="priority">
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
+              </div>
+
+              <!-- Notes -->
+              <div class="col-12">
+                <label for="deal-notes" class="form-label">Deal Notes & RFP Requirements</label>
+                <textarea
+                  id="deal-notes"
+                  name="notes"
+                  class="form-control"
+                  rows="3"
+                  formControlName="notes"
+                  placeholder="Key deliverables, timeline expectations, procurement contacts..."
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer-custom">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary">
+              {{ isEditing ? 'Save Changes' : 'Create Deal' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    }
+  </div>
+</app-dashboard-layout>

@@ -1,0 +1,7 @@
+# Googlebot & Search Engine Crawlers Configuration for Lumsum
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://www.lumsumpro.com/sitemap.xml

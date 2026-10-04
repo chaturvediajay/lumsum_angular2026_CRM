@@ -1,0 +1,339 @@
+<app-dashboard-layout>
+  <div class="activities-container">
+    <!-- Header Section -->
+    <div class="page-header">
+      <div>
+        <h2 class="page-title">📅 CRM Activities & Interactions</h2>
+        <p class="page-subtitle">Schedule client calls, prepare presentations, log notes, and stay on top of follow-ups</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-primary" (click)="openCreateModal()">
+          <span class="btn-icon">➕</span> Log New Activity
+        </button>
+      </div>
+    </div>
+
+    <!-- Controls Bar -->
+    <div class="control-bar">
+      <!-- Activity Type Pills -->
+      <div class="type-pills">
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="selectedType === 'All'"
+          (click)="selectedType = 'All'; applyFilter()"
+        >
+          All Activities
+        </button>
+        @for (t of types; track t) {
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="selectedType === t"
+          (click)="selectedType = t; applyFilter()"
+        >
+          {{ getActivityIcon(t) }} {{ t }}s
+        </button>
+        }
+      </div>
+
+      <div class="filter-toggles">
+        <label for="activities-show-completed" class="form-check-label">
+          <input
+            id="activities-show-completed"
+            name="showCompleted"
+            type="checkbox"
+            class="form-check-input"
+            [(ngModel)]="showCompleted"
+            (ngModelChange)="applyFilter()"
+          />
+          Show Completed Tasks
+        </label>
+      </div>
+    </div>
+
+    <!-- Activities Agenda Sections -->
+    <div class="agenda-layout">
+      <!-- Section: Overdue -->
+      @if (getOverdueActivities().length > 0) {
+      <div class="agenda-group overdue-group">
+        <div class="group-header">
+          <h4>🚨 Overdue Tasks ({{ getOverdueActivities().length }})</h4>
+        </div>
+        <div class="activities-list">
+          @for (act of getOverdueActivities(); track act.id) {
+          <div class="activity-card overdue">
+            <div class="checkbox-col">
+              <input
+                [id]="'act-overdue-' + act.id"
+                [name]="'actOverdue_' + act.id"
+                type="checkbox"
+                class="form-check-input activity-check"
+                [checked]="act.completed"
+                (change)="toggleActivity(act.id)"
+                aria-label="Mark task as complete"
+              />
+            </div>
+            <div class="content-col">
+              <div class="act-header">
+                <span class="type-badge">{{ getActivityIcon(act.type) }} {{ act.type }}</span>
+                <span class="priority-badge">{{ act.priority }}</span>
+              </div>
+              <h5 class="act-title">{{ act.title }}</h5>
+              <div class="act-meta">
+                <span class="related-badge">🔗 {{ act.relatedName }}</span>
+                <span class="due-date text-danger">⚠️ Due {{ act.dueDate | date: 'mediumDate' }}</span>
+                <span class="rep">👤 {{ act.assignee }}</span>
+              </div>
+              @if (act.notes) {
+              <p class="act-notes">{{ act.notes }}</p>
+              }
+            </div>
+            <div class="action-col">
+              <button class="btn btn-sm btn-outline-danger" (click)="deleteActivity(act.id)">🗑️</button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- Section: Today -->
+      <div class="agenda-group today-group">
+        <div class="group-header">
+          <h4>⭐ Scheduled For Today ({{ getTodayActivities().length }})</h4>
+        </div>
+        <div class="activities-list">
+          @if (getTodayActivities().length === 0) {
+          <div class="empty-state-box">
+            <span>🎉 No remaining activities due today!</span>
+          </div>
+          }
+
+          @for (act of getTodayActivities(); track act.id) {
+          <div class="activity-card">
+            <div class="checkbox-col">
+              <input
+                [id]="'act-today-' + act.id"
+                [name]="'actToday_' + act.id"
+                type="checkbox"
+                class="form-check-input activity-check"
+                [checked]="act.completed"
+                (change)="toggleActivity(act.id)"
+                aria-label="Mark task as complete"
+              />
+            </div>
+            <div class="content-col">
+              <div class="act-header">
+                <span class="type-badge">{{ getActivityIcon(act.type) }} {{ act.type }}</span>
+                <span class="priority-badge">{{ act.priority }}</span>
+              </div>
+              <h5 class="act-title">{{ act.title }}</h5>
+              <div class="act-meta">
+                <span class="related-badge">🔗 {{ act.relatedName }}</span>
+                <span class="due-date text-primary">📅 Today</span>
+                <span class="rep">👤 {{ act.assignee }}</span>
+              </div>
+              @if (act.notes) {
+              <p class="act-notes">{{ act.notes }}</p>
+              }
+            </div>
+            <div class="action-col">
+              <button class="btn btn-sm btn-outline-danger" (click)="deleteActivity(act.id)">🗑️</button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Section: Upcoming -->
+      <div class="agenda-group upcoming-group">
+        <div class="group-header">
+          <h4>📆 Upcoming Priorities ({{ getUpcomingActivities().length }})</h4>
+        </div>
+        <div class="activities-list">
+          @if (getUpcomingActivities().length === 0) {
+          <div class="empty-state-box">
+            <span>No upcoming tasks scheduled yet.</span>
+          </div>
+          }
+
+          @for (act of getUpcomingActivities(); track act.id) {
+          <div class="activity-card">
+            <div class="checkbox-col">
+              <input
+                [id]="'act-upcoming-' + act.id"
+                [name]="'actUpcoming_' + act.id"
+                type="checkbox"
+                class="form-check-input activity-check"
+                [checked]="act.completed"
+                (change)="toggleActivity(act.id)"
+                aria-label="Mark task as complete"
+              />
+            </div>
+            <div class="content-col">
+              <div class="act-header">
+                <span class="type-badge">{{ getActivityIcon(act.type) }} {{ act.type }}</span>
+                <span class="priority-badge">{{ act.priority }}</span>
+              </div>
+              <h5 class="act-title">{{ act.title }}</h5>
+              <div class="act-meta">
+                <span class="related-badge">🔗 {{ act.relatedName }}</span>
+                <span class="due-date">📅 {{ act.dueDate | date: 'mediumDate' }}</span>
+                <span class="rep">👤 {{ act.assignee }}</span>
+              </div>
+              @if (act.notes) {
+              <p class="act-notes">{{ act.notes }}</p>
+              }
+            </div>
+            <div class="action-col">
+              <button class="btn btn-sm btn-outline-danger" (click)="deleteActivity(act.id)">🗑️</button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Section: Completed -->
+      @if (showCompleted && getCompletedActivities().length > 0) {
+      <div class="agenda-group completed-group">
+        <div class="group-header">
+          <h4>✅ Completed Log ({{ getCompletedActivities().length }})</h4>
+        </div>
+        <div class="activities-list">
+          @for (act of getCompletedActivities(); track act.id) {
+          <div class="activity-card is-done">
+            <div class="checkbox-col">
+              <input
+                [id]="'act-completed-' + act.id"
+                [name]="'actCompleted_' + act.id"
+                type="checkbox"
+                class="form-check-input activity-check"
+                [checked]="act.completed"
+                (change)="toggleActivity(act.id)"
+                aria-label="Toggle completed task"
+              />
+            </div>
+            <div class="content-col">
+              <div class="act-header">
+                <span class="type-badge">{{ getActivityIcon(act.type) }} {{ act.type }}</span>
+              </div>
+              <h5 class="act-title strike">{{ act.title }}</h5>
+              <div class="act-meta">
+                <span class="related-badge">🔗 {{ act.relatedName }}</span>
+                <span class="rep">Completed by {{ act.assignee }}</span>
+              </div>
+            </div>
+            <div class="action-col">
+              <button class="btn btn-sm btn-outline-danger" (click)="deleteActivity(act.id)">🗑️</button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+    </div>
+
+    <!-- Modal Form (Log Activity) -->
+    @if (showModal) {
+    <div class="modal-backdrop-custom" (click)="closeModal()">
+      <div class="modal-dialog-custom" (click)="$event.stopPropagation()">
+        <div class="modal-header-custom">
+          <h3>Log New Client Interaction / Task</h3>
+          <button type="button" class="close-btn" (click)="closeModal()">✕</button>
+        </div>
+
+        <form [formGroup]="activityForm" (ngSubmit)="saveActivity()">
+          <div class="modal-body-custom">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="activity-type" class="form-label">Activity Type *</label>
+                <select id="activity-type" name="type" class="form-select" formControlName="type">
+                  @for (t of types; track t) {
+                  <option [value]="t">{{ getActivityIcon(t) }} {{ t }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label for="activity-due-date" class="form-label">Due / Scheduled Date *</label>
+                <input id="activity-due-date" name="dueDate" type="date" class="form-control" formControlName="dueDate" />
+              </div>
+
+              <div class="col-12">
+                <label for="activity-title" class="form-label">Task Summary / Action Title *</label>
+                <input
+                  id="activity-title"
+                  name="title"
+                  type="text"
+                  class="form-control"
+                  formControlName="title"
+                  placeholder="e.g. Schedule enterprise discovery call"
+                  [class.is-invalid]="activityForm.get('title')?.invalid && activityForm.get('title')?.touched"
+                />
+              </div>
+
+              <div class="col-md-6">
+                <label for="activity-related-type" class="form-label">Associated Entity *</label>
+                <select id="activity-related-type" name="relatedType" class="form-select" formControlName="relatedType">
+                  <option value="Lead">Lead</option>
+                  <option value="Deal">Deal</option>
+                  <option value="Customer">Customer Account</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label for="activity-related-name" class="form-label">Target Name / Company *</label>
+                <input
+                  id="activity-related-name"
+                  name="relatedName"
+                  type="text"
+                  class="form-control"
+                  formControlName="relatedName"
+                  placeholder="e.g. Apex Cloud Solutions"
+                  [class.is-invalid]="activityForm.get('relatedName')?.invalid && activityForm.get('relatedName')?.touched"
+                />
+              </div>
+
+              <div class="col-md-6">
+                <label for="activity-priority" class="form-label">Priority</label>
+                <select id="activity-priority" name="priority" class="form-select" formControlName="priority">
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label for="activity-assignee" class="form-label">Assignee</label>
+                <input
+                  id="activity-assignee"
+                  name="assignee"
+                  type="text"
+                  class="form-control"
+                  formControlName="assignee"
+                  autocomplete="name"
+                />
+              </div>
+
+              <div class="col-12">
+                <label for="activity-notes" class="form-label">Agenda / Meeting Notes</label>
+                <textarea
+                  id="activity-notes"
+                  name="notes"
+                  class="form-control"
+                  rows="3"
+                  formControlName="notes"
+                  placeholder="Discussion points, follow-up commitments..."
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer-custom">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Task</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    }
+  </div>
+</app-dashboard-layout>

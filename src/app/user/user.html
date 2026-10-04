@@ -1,0 +1,638 @@
+<app-dashboard-layout>
+  <div class="user-container">
+    <!-- Header -->
+    <div class="user-header">
+      <div>
+        <h2>👥 User & Session Management</h2>
+        <p>Monitor authenticated user sessions, inspect client telemetry, and enforce access revocation</p>
+      </div>
+      @if (activeTab === 'sessions') {
+      <div class="header-actions">
+        <button class="btn btn-outline-primary" (click)="fetchSessionsData()" [disabled]="isSessionsLoading">
+          <span class="btn-icon">🔄</span> Refresh Sessions
+        </button>
+      </div>
+      }
+    </div>
+
+    <!-- Tabs Navigation -->
+    <div class="tabs-navigation">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'list'"
+        (click)="switchTab('list')"
+      >
+        <span class="tab-icon">📋</span> User Directory
+      </button>
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'sessions'"
+        (click)="switchTab('sessions')"
+      >
+        <span class="tab-icon">🛡️</span> Active Sessions
+        @if (sessionsList.length > 0) {
+        <span class="badge-count">{{ sessionsList.length }}</span>
+        }
+      </button>
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'profile'"
+        (click)="switchTab('profile')"
+        [disabled]="!selectedUser"
+      >
+        <span class="tab-icon">👤</span> Profile Details
+      </button>
+    </div>
+
+    <!-- Feedback Alerts -->
+    @if (actionSuccessMessage) {
+    <div class="alert alert-success">
+      <span class="alert-icon">✅</span>
+      <div class="alert-content">
+        <p>{{ actionSuccessMessage }}</p>
+      </div>
+    </div>
+    }
+
+    @if (errorMessage && activeTab === 'list') {
+    <div class="alert alert-error">
+      <span class="alert-icon">⚠️</span>
+      <div>
+        <h4>Error Loading Users</h4>
+        <p>{{ errorMessage }}</p>
+      </div>
+      <button class="alert-action" (click)="retry()">Retry</button>
+    </div>
+    }
+
+    @if (sessionErrorMessage && activeTab === 'sessions') {
+    <div class="alert alert-error">
+      <span class="alert-icon">⚠️</span>
+      <div>
+        <h4>Error Loading Sessions</h4>
+        <p>{{ sessionErrorMessage }}</p>
+      </div>
+      <button class="alert-action" (click)="fetchSessionsData()">Retry</button>
+    </div>
+    }
+
+    <!-- Loading State -->
+    @if (isLoading && activeTab === 'list') {
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>Loading user directory...</p>
+    </div>
+    }
+
+    <!-- Content Sections -->
+    @if (!isLoading || activeTab !== 'list') {
+
+    <!-- ==================== USER LIST TAB ==================== -->
+    @if (activeTab === 'list') {
+    <div class="tab-content user-list-tab">
+      @if (userList.length === 0) {
+      <div class="empty-state">
+        <span class="empty-icon">📭</span>
+        <h3>No Users Found</h3>
+        <p>No user data available from the server</p>
+      </div>
+      } @else {
+      <div class="users-grid">
+        @for (userItem of userList; track userItem.id || userItem.username) {
+        <div
+          class="user-card"
+          [class.active]="selectedUser?.id === userItem.id"
+          (click)="selectUser(userItem)"
+        >
+          <div class="user-card-header">
+            <div class="user-avatar">
+              {{ (userItem.username || userItem.email)[0].toUpperCase() || 'U' }}
+            </div>
+            <div class="user-card-title">
+              <h4>
+                {{ userItem.firstName && userItem.lastName
+                ? userItem.firstName + ' ' + userItem.lastName
+                : userItem.username }}
+              </h4>
+              <p class="user-email">{{ userItem.email }}</p>
+            </div>
+          </div>
+
+          <div class="user-card-body">
+            <div class="user-status-group">
+              @if (userItem.isActive !== false) {
+              <span class="status-badge active">🟢 Active</span>
+              } @else {
+              <span class="status-badge inactive">🔴 Inactive</span>
+              }
+              <span class="user-id">ID: {{ userItem.id }}</span>
+            </div>
+
+            <!-- Session Indicator -->
+            <div class="user-session-status" (click)="viewUserSessions(userItem, $event)">
+              @if (getUserSessionCount(userItem.id) > 0) {
+              <span class="session-pill online" title="View active sessions">
+                🛡️ {{ getUserSessionCount(userItem.id) }} Active Session{{ getUserSessionCount(userItem.id) > 1 ? 's' : '' }}
+              </span>
+              } @else {
+              <span class="session-pill offline">
+                ⚪ No Active Session
+              </span>
+              }
+            </div>
+          </div>
+        </div>
+        }
+      </div>
+      }
+    </div>
+    }
+
+    <!-- ==================== ACTIVE SESSIONS TAB ==================== -->
+    @if (activeTab === 'sessions') {
+    <div class="tab-content sessions-tab">
+      <!-- Session Metric Cards -->
+      <div class="stats-overview">
+        <div class="stat-pill">
+          <div class="stat-pill-info">
+            <span class="stat-pill-label">Total Active Sessions</span>
+            <span class="stat-pill-val highlight-blue">
+              {{ sessionStats ? sessionStats.totalActiveSessions : sessionsList.length }}
+            </span>
+          </div>
+          <span class="stat-icon">🛡️</span>
+        </div>
+
+        <div class="stat-pill">
+          <div class="stat-pill-info">
+            <span class="stat-pill-label">Unique Logged-In Users</span>
+            <span class="stat-pill-val highlight-green">
+              {{ sessionStats ? sessionStats.uniqueActiveUsers : 1 }}
+            </span>
+          </div>
+          <span class="stat-icon">👥</span>
+        </div>
+
+        <div class="stat-pill">
+          <div class="stat-pill-info">
+            <span class="stat-pill-label">Authenticated Today</span>
+            <span class="stat-pill-val">
+              {{ sessionStats ? sessionStats.activeToday : sessionsList.length }}
+            </span>
+          </div>
+          <span class="stat-icon">📅</span>
+        </div>
+      </div>
+
+      <!-- Control Bar (Search & Filter) -->
+      <div class="control-bar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input
+            id="session-search"
+            name="sessionSearch"
+            type="text"
+            class="form-control"
+            placeholder="Search sessions by username, email, IP, browser, or OS..."
+            [(ngModel)]="sessionSearchTerm"
+            (ngModelChange)="applySessionFilter()"
+          />
+        </div>
+
+        <div class="filter-group">
+          <select
+            id="session-device-filter"
+            name="sessionDeviceFilter"
+            class="form-select"
+            [(ngModel)]="selectedDeviceFilter"
+            (ngModelChange)="applySessionFilter()"
+          >
+            <option value="All">All Devices</option>
+            <option value="Desktop">💻 Desktop</option>
+            <option value="Mobile">📱 Mobile</option>
+            <option value="Tablet">📟 Tablet</option>
+          </select>
+
+          <select
+            id="session-status-filter"
+            name="sessionStatusFilter"
+            class="form-select"
+            [(ngModel)]="selectedStatusFilter"
+            (ngModelChange)="applySessionFilter()"
+          >
+            <option value="All">All Statuses</option>
+            <option value="Active">🟢 Active</option>
+            <option value="Expiring">🟡 Expiring Soon (&lt;24h)</option>
+          </select>
+
+          <button
+            type="button"
+            class="btn-signout-others"
+            title="Sign out all other devices while keeping this device active"
+            (click)="revokeOtherSessions()"
+          >
+            🚪 Sign Out Other Devices
+          </button>
+        </div>
+      </div>
+
+      <!-- Sessions Table Card -->
+      <div class="customer-card">
+        <div class="table-responsive-wrapper">
+          <table class="session-table">
+            <thead>
+              <tr>
+                <th>User / Account</th>
+                <th>Device & Client</th>
+                <th>Browser</th>
+                <th>IP Address & Network</th>
+                <th>Login Timestamp</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (isSessionsLoading) {
+              <tr>
+                <td colspan="7" class="empty-cell">
+                  <div class="loading-spinner"></div>
+                  <p>Loading active sessions...</p>
+                </td>
+              </tr>
+              } @else if (filteredSessions.length === 0) {
+              <tr>
+                <td colspan="7" class="empty-cell">
+                  <div class="empty-state">
+                    <span class="empty-icon">🛡️</span>
+                    <h4>No active sessions found</h4>
+                    <p>No active sessions match the current filter criteria.</p>
+                  </div>
+                </td>
+              </tr>
+              }
+
+              @for (session of filteredSessions; track session.id) {
+              <tr class="session-row" [class.current-session-row]="session.currentSession">
+                <!-- User / Account -->
+                <td>
+                  <div class="user-identity-cell">
+                    <div class="user-avatar-sm">
+                      {{ (session.username || session.email)[0].toUpperCase() }}
+                    </div>
+                    <div>
+                      <div class="user-name-line">
+                        <strong>{{ session.username }}</strong>
+                        @if (isCurrentSession(session)) {
+                        <span class="badge-current-user">This Device</span>
+                        }
+                      </div>
+                      <span class="user-subtext">{{ session.email }}</span>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Device & Client -->
+                <td>
+                  <div class="meta-tag-group">
+                    <div class="device-name-row">
+                      <span class="device-custom-name">{{ getDeviceDisplayLabel(session) }}</span>
+                      <button
+                        type="button"
+                        class="btn-rename-device"
+                        title="Rename this device"
+                        (click)="editDeviceName(session)"
+                      >
+                        ✏️
+                      </button>
+                    </div>
+                    <div>
+                      <span class="device-tag">
+                        {{ getDeviceIcon(session.deviceType) }} {{ session.deviceType }} • {{ getOSIcon(session.operatingSystem) }} {{ session.operatingSystem }}
+                      </span>
+                    </div>
+                    @if (session.deviceId) {
+                    <span class="badge-device-id" [title]="'Device ID: ' + session.deviceId">
+                      🆔 {{ getDeviceShortId(session) }}
+                    </span>
+                    }
+                    @if (isSameIpAndBrowser(session)) {
+                    <span class="badge-shared-ip" title="Multiple devices sharing this IP and browser">
+                      ⚡ Same IP • Multi-Device ({{ getSameIpBrowserCount(session) }})
+                    </span>
+                    }
+                  </div>
+                </td>
+
+                <!-- Browser -->
+                <td>
+                  <span class="browser-pill">
+                    {{ getBrowserIcon(session.browser) }} {{ session.browser }}
+                  </span>
+                </td>
+
+                <!-- IP Address & Network -->
+                <td>
+                  <div class="ip-stack">
+                    <div class="ip-address-row">
+                      <span class="ip-code">{{ session.ipAddress }}</span>
+                      @if (session.clientPort) {
+                      <span class="client-port">:{{ session.clientPort }}</span>
+                      }
+                    </div>
+                    @if (session.networkType) {
+                    <span
+                      class="badge-network"
+                      [class.badge-lan]="session.networkType.includes('Private LAN')"
+                      [class.badge-localhost]="session.networkType.includes('Localhost')"
+                      [class.badge-wan]="session.networkType.includes('Public WAN')"
+                    >
+                      {{ getNetworkIcon(session.networkType) }} {{ session.networkType }}
+                    </span>
+                    }
+                    @if (session.clientSystemInfo) {
+                    <div class="system-info-row">
+                      <span class="client-system-pill" [title]="session.clientSystemInfo">
+                        🖥️ {{ session.clientSystemInfo }}
+                      </span>
+                      <button
+                        type="button"
+                        class="btn-system-details"
+                        title="View Detailed System & Network Telemetry"
+                        (click)="openSystemDetailsModal(session)"
+                      >
+                        ℹ️
+                      </button>
+                    </div>
+                    }
+                    @if (isSameIpAndBrowser(session)) {
+                    <span class="badge-shared-ip" title="Concurrent sessions on identical IP">
+                      🌐 Shared Network
+                    </span>
+                    }
+                  </div>
+                </td>
+
+                <!-- Login Timestamp -->
+                <td>
+                  <div class="time-meta">
+                    <span class="time-primary">{{ session.createdAt | date : 'medium' }}</span>
+                    @if (session.lastAccessedAt) {
+                    <span class="time-sub">Last active: {{ session.lastAccessedAt | date : 'shortTime' }}</span>
+                    }
+                  </div>
+                </td>
+
+                <!-- Status -->
+                <td>
+                  @if (session.active) {
+                  <span class="status-pill badge-active">🟢 Active</span>
+                  } @else {
+                  <span class="status-pill badge-inactive">🔴 Expired</span>
+                  }
+                </td>
+
+                <!-- Actions -->
+                <td class="text-end">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-danger btn-revoke"
+                    title="Terminate Session"
+                    [disabled]="revokingSessionId === session.id"
+                    (click)="revokeSession(session)"
+                  >
+                    @if (revokingSessionId === session.id) {
+                    <span class="spinner-border spinner-border-sm"></span>
+                    } @else {
+                    ⛔ Revoke
+                    }
+                  </button>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    }
+
+    <!-- ==================== USER PROFILE TAB ==================== -->
+    @if (activeTab === 'profile' && selectedUser) {
+    <div class="tab-content user-profile-tab">
+      <div class="profile-header">
+        <div class="profile-avatar-large">
+          {{ (selectedUser.username || selectedUser.email)[0].toUpperCase() || 'U' }}
+        </div>
+        <div class="profile-info-header">
+          <h2>
+            {{ selectedUser.firstName && selectedUser.lastName
+            ? selectedUser.firstName + ' ' + selectedUser.lastName
+            : selectedUser.username }}
+          </h2>
+          <p class="profile-subtitle">{{ selectedUser.email }}</p>
+          <div class="profile-badges">
+            @if (selectedUser.isActive !== false) {
+            <span class="status-badge active large">🟢 Active Account</span>
+            } @else {
+            <span class="status-badge inactive large">🔴 Inactive Account</span>
+            }
+            <span class="status-badge session-badge large">
+              🛡️ {{ selectedUserSessions.length }} Active Session{{ selectedUserSessions.length !== 1 ? 's' : '' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Details -->
+      <div class="profile-details">
+        <h3>Account Information</h3>
+        <div class="details-grid">
+          <div class="detail-item">
+            <label>Username</label>
+            <p>{{ selectedUser.username }}</p>
+          </div>
+
+          <div class="detail-item">
+            <label>Email Address</label>
+            <p>{{ selectedUser.email }}</p>
+          </div>
+
+          <div class="detail-item">
+            <label>User ID</label>
+            <p>{{ selectedUser.id }}</p>
+          </div>
+
+          @if (selectedUser.phone) {
+          <div class="detail-item">
+            <label>Phone Number</label>
+            <p>{{ selectedUser.phone }}</p>
+          </div>
+          }
+
+          @if (selectedUser.city) {
+          <div class="detail-item">
+            <label>City</label>
+            <p>{{ selectedUser.city }}</p>
+          </div>
+          }
+
+          @if (selectedUser.country) {
+          <div class="detail-item">
+            <label>Country</label>
+            <p>{{ selectedUser.country }}</p>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Active Sessions for Selected User -->
+      <div class="profile-details">
+        <div class="section-header-flex">
+          <h3>Active Device Sessions ({{ selectedUserSessions.length }})</h3>
+          @if (selectedUserSessions.length > 0) {
+          <button class="btn btn-sm btn-outline-danger" (click)="revokeAllSessionsForUser(selectedUser.id)">
+            ⛔ Terminate All Sessions
+          </button>
+          }
+        </div>
+
+        @if (selectedUserSessions.length === 0) {
+        <p class="text-muted fst-italic">This user currently has no active sessions online.</p>
+        } @else {
+        <div class="user-sessions-cards">
+          @for (s of selectedUserSessions; track s.id) {
+          <div class="session-mini-card">
+            <div class="session-card-left">
+              <span class="device-icon-large">{{ getDeviceIcon(s.deviceType) }}</span>
+              <div>
+                <strong>{{ s.browser }} on {{ s.operatingSystem }}</strong>
+                <span class="session-meta-line">
+                  IP: {{ s.ipAddress }}@if (s.clientPort) {:{{ s.clientPort }}}
+                  @if (s.networkType) { • {{ s.networkType }} }
+                  • Login: {{ s.createdAt | date : 'medium' }}
+                </span>
+                @if (s.clientSystemInfo) {
+                <span class="session-sub-meta">
+                  🖥️ {{ s.clientSystemInfo }}
+                  <button type="button" class="btn-link-details" (click)="openSystemDetailsModal(s)">Details</button>
+                </span>
+                }
+              </div>
+            </div>
+            <button class="btn btn-sm btn-outline-danger" (click)="revokeSession(s)">
+              Revoke
+            </button>
+          </div>
+          }
+        </div>
+        }
+      </div>
+
+      <!-- Actions -->
+      <div class="profile-actions">
+        <button class="btn btn-secondary" (click)="switchTab('list')">
+          ← Back to User Directory
+        </button>
+      </div>
+    </div>
+    }
+    }
+
+    <!-- System & Network Telemetry Modal -->
+    @if (selectedSystemSession) {
+    <div class="telemetry-modal-backdrop" (click)="closeSystemDetailsModal()">
+      <div class="telemetry-modal-card" (click)="$event.stopPropagation()">
+        <div class="telemetry-modal-header">
+          <div class="telemetry-header-title">
+            <span class="telemetry-icon">📡</span>
+            <div>
+              <h3>Client System & Network Telemetry</h3>
+              <p>Session #{{ selectedSystemSession.id }} • {{ selectedSystemSession.username }}</p>
+            </div>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="closeSystemDetailsModal()">✕</button>
+        </div>
+
+        <div class="telemetry-modal-body">
+          <!-- Network Section -->
+          <div class="telemetry-section">
+            <h4 class="section-title">🌐 Network & Connection</h4>
+            <div class="telemetry-grid">
+              <div class="telemetry-item">
+                <span class="telemetry-label">IP Address</span>
+                <span class="telemetry-val font-mono">{{ selectedSystemSession.ipAddress }}</span>
+              </div>
+              <div class="telemetry-item">
+                <span class="telemetry-label">Client Remote Port</span>
+                <span class="telemetry-val font-mono">{{ selectedSystemSession.clientPort || 'N/A' }}</span>
+              </div>
+              <div class="telemetry-item">
+                <span class="telemetry-label">Network Classification</span>
+                <span class="telemetry-val">
+                  <span class="badge-network badge-lan">
+                    {{ getNetworkIcon(selectedSystemSession.networkType) }} {{ selectedSystemSession.networkType || 'Unknown' }}
+                  </span>
+                </span>
+              </div>
+              <div class="telemetry-item">
+                <span class="telemetry-label">Client Timezone</span>
+                <span class="telemetry-val">🕒 {{ selectedSystemSession.timezone || 'Not Reported' }}</span>
+              </div>
+              <div class="telemetry-item">
+                <span class="telemetry-label">Client Locale</span>
+                <span class="telemetry-val">🗣️ {{ selectedSystemSession.locale || 'Not Reported' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- System & Device Section -->
+          <div class="telemetry-section">
+            <h4 class="section-title">💻 Client System & Hardware</h4>
+            <div class="telemetry-grid">
+              <div class="telemetry-item">
+                <span class="telemetry-label">System Summary</span>
+                <span class="telemetry-val highlight-val">{{ selectedSystemSession.clientSystemInfo || 'Standard Web Client' }}</span>
+              </div>
+              <div class="telemetry-item">
+                <span class="telemetry-label">Operating System</span>
+                <span class="telemetry-val">{{ getOSIcon(selectedSystemSession.operatingSystem) }} {{ selectedSystemSession.operatingSystem }}</span>
+              </div>
+              <div class="telemetry-item">
+                <span class="telemetry-label">Browser</span>
+                <span class="telemetry-val">{{ getBrowserIcon(selectedSystemSession.browser) }} {{ selectedSystemSession.browser }}</span>
+              </div>
+              <div class="telemetry-item">
+                <span class="telemetry-label">Screen Resolution</span>
+                <span class="telemetry-val">📐 {{ selectedSystemSession.screenResolution || 'N/A' }}</span>
+              </div>
+              <div class="telemetry-item">
+                <span class="telemetry-label">Device Name</span>
+                <span class="telemetry-val">{{ selectedSystemSession.deviceName || 'Standard Device' }}</span>
+              </div>
+              <div class="telemetry-item">
+                <span class="telemetry-label">Device ID</span>
+                <span class="telemetry-val font-mono">{{ selectedSystemSession.deviceId || 'Legacy Device' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- User Agent (Raw) -->
+          @if (selectedSystemSession.userAgent) {
+          <div class="telemetry-section">
+            <h4 class="section-title">🧭 Raw User-Agent Header</h4>
+            <pre class="telemetry-ua-box">{{ selectedSystemSession.userAgent }}</pre>
+          </div>
+          }
+        </div>
+
+        <div class="telemetry-modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeSystemDetailsModal()">Close</button>
+        </div>
+      </div>
+    </div>
+    }
+  </div>
+</app-dashboard-layout>

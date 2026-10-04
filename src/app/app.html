@@ -1,0 +1,40 @@
+<router-outlet />
+
+<!-- Inactivity Warning Dialog (Appears 60s before 5-minute idle timeout) -->
+@if (idleService.isWarningVisible()) {
+<div class="idle-modal-backdrop" (click)="$event.stopPropagation()">
+  <div class="idle-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="idle-title">
+    <div class="idle-modal-icon-wrapper">
+      <span class="idle-modal-icon">⏳</span>
+    </div>
+    <h3 id="idle-title" class="idle-modal-title">Session Inactivity Warning</h3>
+    <p class="idle-modal-text">
+      You have been inactive for over <strong>4 minutes</strong>.
+      For your security, your session will automatically log out in:
+    </p>
+    <div class="idle-countdown-display">
+      <span class="idle-countdown-number">{{ idleService.remainingSeconds() }}</span>
+      <span class="idle-countdown-unit">seconds</span>
+    </div>
+    <p class="idle-modal-subtext">
+      Move your mouse, press any key, or click below to keep your session active.
+    </p>
+    <div class="idle-modal-actions">
+      <button
+        type="button"
+        class="idle-btn-logout"
+        (click)="idleService.logoutDueToIdle()"
+      >
+        Log Out Now
+      </button>
+      <button
+        type="button"
+        class="idle-btn-stay"
+        (click)="idleService.stayLoggedIn()"
+      >
+        Keep Me Logged In
+      </button>
+    </div>
+  </div>
+</div>
+}

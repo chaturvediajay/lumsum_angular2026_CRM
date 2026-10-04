@@ -1,0 +1,427 @@
+<app-dashboard-layout>
+  <div class="leads-container">
+    <!-- Header Section -->
+    <div class="page-header">
+      <div>
+        <h2 class="page-title">🎯 CRM Leads Management</h2>
+        <p class="page-subtitle">Track, qualify, and convert potential clients into revenue opportunities</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-primary" (click)="openCreateModal()">
+          <span class="btn-icon">➕</span> Add New Lead
+        </button>
+      </div>
+    </div>
+
+    <!-- Success / Conversion Toast -->
+    @if (conversionMessage) {
+    <div class="alert alert-success animate-fade-in">
+      <span class="alert-icon">✨</span>
+      <span>{{ conversionMessage }}</span>
+      <button type="button" class="btn-close" (click)="conversionMessage = null" aria-label="Close"></button>
+    </div>
+    }
+
+    <!-- Quick Stats Bar -->
+    <div class="stats-overview">
+      <div class="stat-pill">
+        <span class="stat-pill-label">Total Leads</span>
+        <span class="stat-pill-val">{{ leads.length }}</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-pill-label">Qualified Leads</span>
+        <span class="stat-pill-val highlight-green">{{ getQualifiedCount() }}</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-pill-label">Pipeline Potential</span>
+        <span class="stat-pill-val highlight-blue">
+          ${{ getTotalPipelinePotential().toLocaleString() }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Control Bar (Filters & Search) -->
+    <div class="control-bar">
+      <!-- Status Pills -->
+      <div class="status-pills">
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="selectedStatus === 'All'"
+          (click)="setStatusFilter('All')"
+        >
+          All ({{ leads.length }})
+        </button>
+        @for (status of statusOptions; track status) {
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="selectedStatus === status"
+          (click)="setStatusFilter(status)"
+        >
+          {{ status }}
+        </button>
+        }
+      </div>
+
+      <!-- Search & Sort Controls -->
+      <div class="search-sort-group">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input
+            id="leads-search"
+            name="leadsSearch"
+            type="text"
+            class="form-control"
+            placeholder="Search by name, company, email..."
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="onSearchChange()"
+          />
+        </div>
+
+        <select
+          id="leads-sort"
+          name="leadsSort"
+          class="form-select sort-select"
+          [(ngModel)]="sortBy"
+          (ngModelChange)="applyFilter()"
+        >
+          <option value="score">Sort by Score (Highest)</option>
+          <option value="value">Sort by Value (Highest)</option>
+          <option value="date">Sort by Recent</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="content-wrapper" [class.has-drawer]="selectedLead !== null">
+      <!-- Leads Table -->
+      <div class="table-responsive leads-card">
+        <table class="leads-table">
+          <thead>
+            <tr>
+              <th>Lead & Title</th>
+              <th>Company</th>
+              <th>Contact Info</th>
+              <th>Score</th>
+              <th>Status</th>
+              <th>Estimated Value</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (filteredLeads.length === 0) {
+            <tr>
+              <td colspan="7" class="empty-cell">
+                <div class="empty-state">
+                  <span class="empty-icon">📭</span>
+                  <h4>No leads match your criteria</h4>
+                  <p>Try clearing filters or search query, or add a new lead.</p>
+                  <button class="btn btn-outline-primary btn-sm" (click)="openCreateModal()">Add Lead</button>
+                </div>
+              </td>
+            </tr>
+            }
+
+            @for (lead of filteredLeads; track lead.id) {
+            <tr
+              class="lead-row"
+              [class.selected]="selectedLead?.id === lead.id"
+              (click)="selectLead(lead)"
+            >
+              <td>
+                <div class="lead-identity">
+                  <div class="lead-avatar" [class]="getScoreColorClass(lead.score)">
+                    {{ lead.name[0] }}
+                  </div>
+                  <div>
+                    <strong class="lead-name">{{ lead.name }}</strong>
+                    <span class="lead-title">{{ lead.title }}</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="lead-company">{{ lead.company }}</span>
+                <span class="lead-source-tag">Via {{ lead.source }}</span>
+              </td>
+              <td>
+                <div class="lead-contact">
+                  <a href="mailto:{{ lead.email }}" (click)="$event.stopPropagation()">✉️ {{ lead.email }}</a>
+                  <span class="phone-text">📞 {{ lead.phone }}</span>
+                </div>
+              </td>
+              <td>
+                <div class="score-badge" [class]="getScoreColorClass(lead.score)">
+                  <span class="score-num">{{ lead.score }}</span>
+                  <div class="score-bar-bg">
+                    <div class="score-bar-fill" [style.width.%]="lead.score"></div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="badge" [class]="getStatusBadgeClass(lead.status)">
+                  {{ lead.status }}
+                </span>
+              </td>
+              <td>
+                <span class="lead-value">${{ lead.estimatedValue.toLocaleString() }}</span>
+              </td>
+              <td class="text-end action-cell">
+                <div class="btn-group-actions" (click)="$event.stopPropagation()">
+                  <button
+                    class="btn btn-sm btn-convert"
+                    title="Convert to Deal & Customer"
+                    (click)="convertLead(lead, $event)"
+                  >
+                    ⚡ Convert
+                  </button>
+                  <button
+                    class="btn btn-sm btn-outline-secondary"
+                    title="Edit Lead"
+                    (click)="openEditModal(lead, $event)"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    class="btn btn-sm btn-outline-danger"
+                    title="Delete Lead"
+                    (click)="deleteLead(lead.id, $event)"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Lead Details Side Drawer -->
+      @if (selectedLead) {
+      <div class="lead-drawer animate-slide-left">
+        <div class="drawer-header">
+          <div class="drawer-title-group">
+            <h3>{{ selectedLead.name }}</h3>
+            <span class="badge" [class]="getStatusBadgeClass(selectedLead.status)">
+              {{ selectedLead.status }}
+            </span>
+          </div>
+          <button type="button" class="close-btn" (click)="closeDrawer()" aria-label="Close">✕</button>
+        </div>
+
+        <div class="drawer-body">
+          <div class="drawer-hero">
+            <div class="drawer-avatar" [class]="getScoreColorClass(selectedLead.score)">
+              {{ selectedLead.name[0] }}
+            </div>
+            <div>
+              <h4>{{ selectedLead.title }}</h4>
+              <p class="company-link">🏢 {{ selectedLead.company }}</p>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h5>Key Attributes</h5>
+            <div class="attribute-grid">
+              <div class="attr-item">
+                <span class="attr-label">Lead Score</span>
+                <span class="attr-val highlight-green">{{ selectedLead.score }}/100</span>
+              </div>
+              <div class="attr-item">
+                <span class="attr-label">Estimated Deal</span>
+                <span class="attr-val highlight-blue">${{ selectedLead.estimatedValue.toLocaleString() }}</span>
+              </div>
+              <div class="attr-item">
+                <span class="attr-label">Acquisition Source</span>
+                <span class="attr-val">{{ selectedLead.source }}</span>
+              </div>
+              <div class="attr-item">
+                <span class="attr-label">Sales Rep</span>
+                <span class="attr-val">{{ selectedLead.assignedTo }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h5>Contact Details</h5>
+            <p><strong>Email:</strong> <a href="mailto:{{ selectedLead.email }}">{{ selectedLead.email }}</a></p>
+            <p><strong>Phone:</strong> {{ selectedLead.phone }}</p>
+            <p><strong>Created:</strong> {{ selectedLead.createdAt | date: 'mediumDate' }}</p>
+          </div>
+
+          @if (selectedLead.notes) {
+          <div class="detail-section">
+            <h5>Meeting Notes & Brief</h5>
+            <div class="notes-box">{{ selectedLead.notes }}</div>
+          </div>
+          }
+
+          <div class="drawer-actions">
+            <button class="btn btn-success w-100 mb-2" (click)="convertLead(selectedLead)">
+              ⚡ Convert to Customer & Deal
+            </button>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-primary flex-fill" (click)="openEditModal(selectedLead)">
+                Edit Lead
+              </button>
+              <button class="btn btn-outline-danger flex-fill" (click)="deleteLead(selectedLead.id)">
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+
+    <!-- Modal Form (Create / Edit Lead) -->
+    @if (showModal) {
+    <div class="modal-backdrop-custom" (click)="closeModal()">
+      <div class="modal-dialog-custom" (click)="$event.stopPropagation()">
+        <div class="modal-header-custom">
+          <h3>{{ isEditing ? 'Edit Lead' : 'Create New Lead' }}</h3>
+          <button type="button" class="close-btn" (click)="closeModal()">✕</button>
+        </div>
+
+        <form [formGroup]="leadForm" (ngSubmit)="saveLead()">
+          <div class="modal-body-custom">
+            <div class="row g-3">
+              <!-- Name & Title -->
+              <div class="col-md-6">
+                <label for="lead-name" class="form-label">Contact Full Name *</label>
+                <input
+                  id="lead-name"
+                  name="name"
+                  type="text"
+                  class="form-control"
+                  formControlName="name"
+                  placeholder="e.g. Rachel Adams"
+                  autocomplete="name"
+                  [class.is-invalid]="leadForm.get('name')?.invalid && leadForm.get('name')?.touched"
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="lead-title" class="form-label">Job Title *</label>
+                <input
+                  id="lead-title"
+                  name="title"
+                  type="text"
+                  class="form-control"
+                  formControlName="title"
+                  placeholder="e.g. Head of Engineering"
+                  autocomplete="organization-title"
+                  [class.is-invalid]="leadForm.get('title')?.invalid && leadForm.get('title')?.touched"
+                />
+              </div>
+
+              <!-- Company & Value -->
+              <div class="col-md-6">
+                <label for="lead-company" class="form-label">Company Name *</label>
+                <input
+                  id="lead-company"
+                  name="company"
+                  type="text"
+                  class="form-control"
+                  formControlName="company"
+                  placeholder="e.g. Acme Tech"
+                  autocomplete="organization"
+                  [class.is-invalid]="leadForm.get('company')?.invalid && leadForm.get('company')?.touched"
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="lead-estimated-value" class="form-label">Estimated Value ($) *</label>
+                <input
+                  id="lead-estimated-value"
+                  name="estimatedValue"
+                  type="number"
+                  class="form-control"
+                  formControlName="estimatedValue"
+                  placeholder="25000"
+                />
+              </div>
+
+              <!-- Email & Phone -->
+              <div class="col-md-6">
+                <label for="lead-email" class="form-label">Email Address *</label>
+                <input
+                  id="lead-email"
+                  name="email"
+                  type="email"
+                  class="form-control"
+                  formControlName="email"
+                  placeholder="rachel@acme.com"
+                  autocomplete="email"
+                  [class.is-invalid]="leadForm.get('email')?.invalid && leadForm.get('email')?.touched"
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="lead-phone" class="form-label">Phone Number *</label>
+                <input
+                  id="lead-phone"
+                  name="phone"
+                  type="text"
+                  class="form-control"
+                  formControlName="phone"
+                  placeholder="+1 (555) 000-0000"
+                  autocomplete="tel"
+                />
+              </div>
+
+              <!-- Status, Score, Source -->
+              <div class="col-md-4">
+                <label for="lead-status" class="form-label">Status</label>
+                <select id="lead-status" name="status" class="form-select" formControlName="status">
+                  @for (opt of statusOptions; track opt) {
+                  <option [value]="opt">{{ opt }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label for="lead-score" class="form-label">Lead Score (0-100)</label>
+                <input
+                  id="lead-score"
+                  name="score"
+                  type="number"
+                  class="form-control"
+                  formControlName="score"
+                  min="0"
+                  max="100"
+                />
+              </div>
+              <div class="col-md-4">
+                <label for="lead-source" class="form-label">Lead Source</label>
+                <select id="lead-source" name="source" class="form-select" formControlName="source">
+                  @for (src of sourceOptions; track src) {
+                  <option [value]="src">{{ src }}</option>
+                  }
+                </select>
+              </div>
+
+              <!-- Notes -->
+              <div class="col-12">
+                <label for="lead-notes" class="form-label">Discovery & Qualification Notes</label>
+                <textarea
+                  id="lead-notes"
+                  name="notes"
+                  class="form-control"
+                  rows="3"
+                  formControlName="notes"
+                  placeholder="Enter prospect background, key requirements, timing, budget constraints..."
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer-custom">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary">
+              {{ isEditing ? 'Save Changes' : 'Create Lead' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    }
+  </div>
+</app-dashboard-layout>

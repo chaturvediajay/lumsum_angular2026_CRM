@@ -1,0 +1,195 @@
+<div class="login-wrapper">
+  <!-- Left Panel - Branding -->
+  <div class="login-panel left-panel">
+    <div class="panel-content">
+      <div class="brand-section">
+        <div class="brand-icon">🚀</div>
+        <h1 class="brand-title">Dashboard</h1>
+        <p class="brand-subtitle">Professional Admin Portal</p>
+      </div>
+
+      <div class="features-list">
+        <div class="feature-item">
+          <span class="feature-icon">✨</span>
+          <div>
+            <h4>Modern Interface</h4>
+            <p>Clean and intuitive design</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">🔒</span>
+          <div>
+            <h4>Secure Access</h4>
+            <p>Enterprise-grade security</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">⚡</span>
+          <div>
+            <h4>Fast Performance</h4>
+            <p>Lightning-fast response times</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="social-links">
+        <p>Follow us on</p>
+        <div class="social-icons">
+          <a href="#" class="social-icon">f</a>
+          <a href="#" class="social-icon">𝕏</a>
+          <a href="#" class="social-icon">in</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel - Login Form -->
+  <div class="login-panel right-panel">
+    <form class="login-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <!-- Header -->
+      <div class="form-header">
+        <h2 class="form-title">Welcome Back</h2>
+        <p class="form-subtitle">Sign in to access your dashboard</p>
+      </div>
+
+      <!-- Alert Messages -->
+      <div class="alerts-container">
+        @if (errorMessage) {
+        <div class="alert alert-error">
+          <span class="alert-icon">⚠️</span>
+          <span class="alert-text">{{ errorMessage }}</span>
+        </div>
+        }
+        @if (successMessage) {
+        <div class="alert alert-success">
+          <span class="alert-icon">✓</span>
+          <span class="alert-text">{{ successMessage }}</span>
+        </div>
+        }
+      </div>
+
+      <!-- Email Field -->
+      <div class="form-group">
+        <label for="email" class="form-label">Username/Email</label>
+        <div class="input-wrapper">
+          <span class="input-icon">✉️</span>
+          <input
+            id="email"
+            name="email"
+            type="text"
+            class="form-input"
+            formControlName="email"
+            placeholder="Enter your username or email"
+            autocomplete="username"
+            [class.input-error]="
+              loginForm.get('email')?.invalid && loginForm.get('email')?.touched
+            "
+          />
+        </div>
+        @if (loginForm.get('email')?.invalid && loginForm.get('email')?.touched) {
+        <div class="error-feedback">
+          @if (loginForm.get('email')?.errors?.['required']) {
+          <span>Username/Email is required</span>
+          }
+          @if (loginForm.get('email')?.errors?.['pattern']) {
+          <span>Spaces are not allowed</span>
+          }
+        </div>
+        }
+      </div>
+
+      <!-- Password Field -->
+      <div class="form-group">
+        <div class="password-label-wrapper">
+          <label for="password" class="form-label">Password</label>
+          <!-- <a href="#" class="forgot-password-link">Forgot?</a> -->
+        </div>
+        <div class="input-wrapper">
+          <span class="input-icon">🔐</span>
+          <input
+            id="password"
+            name="password"
+            [type]="getPasswordFieldType()"
+            class="form-input"
+            formControlName="password"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+            [class.input-error]="
+              loginForm.get('password')?.invalid && loginForm.get('password')?.touched
+            "
+          />
+          <button
+            type="button"
+            class="password-toggle"
+            (click)="togglePasswordVisibility()"
+            tabindex="-1"
+          >
+            {{ getPasswordIconClass() }}
+          </button>
+        </div>
+        @if (loginForm.get('password')?.invalid && loginForm.get('password')?.touched) {
+        <div class="error-feedback">
+          @if (loginForm.get('password')?.errors?.['required']) {
+          <span>Password is required</span>
+          }
+          @if (loginForm.get('password')?.errors?.['minlength']) {
+          <span>Password must be at least 6 characters</span>
+          }
+          @if (loginForm.get('password')?.errors?.['pattern']) {
+          <span>Password cannot contain spaces</span>
+          }
+        </div>
+        }
+      </div>
+
+      <!-- Remember Me Checkbox -->
+      <!-- <div class="checkbox-wrapper">
+        <input
+          id="rememberMe"
+          type="checkbox"
+          class="checkbox-input"
+          formControlName="rememberMe"
+        />
+        <label for="rememberMe" class="checkbox-label">Remember me for 30 days</label>
+      </div> -->
+
+      <!-- Submit Button -->
+      <button
+        type="submit"
+        class="btn btn-login"
+        [disabled]="isLoading || loginForm.invalid"
+      >
+        @if (isLoading) {
+        <span class="loading-spinner"></span>
+        <span>Signing in...</span>
+        } @else {
+        <span>Sign In</span>
+        <span class="btn-icon">→</span>
+        }
+      </button>
+
+      <!-- Divider -->
+      <!-- <div class="divider">
+        <span>or continue with</span>
+      </div> -->
+
+      <!-- Social Login Buttons -->
+      <!-- <div class="social-login">
+        <button type="button" class="social-btn google-btn">
+          <span class="social-btn-icon">G</span>
+          <span>Google</span>
+        </button>
+        <button type="button" class="social-btn microsoft-btn">
+          <span class="social-btn-icon">⊞</span>
+          <span>Microsoft</span>
+        </button>
+      </div> -->
+
+      <!-- Sign Up Link -->
+      <!-- <div class="signup-link">
+        <p>Don't have an account? <a href="#">Create one</a></p>
+      </div> -->
+    </form>
+  </div>
+</div>
+

@@ -1,0 +1,392 @@
+<app-dashboard-layout>
+  <div class="customers-container">
+    <!-- Header Section -->
+    <div class="page-header">
+      <div>
+        <h2 class="page-title">🏢 Customer Accounts & Directory</h2>
+        <p class="page-subtitle">Manage client relationships, track lifetime value, and view associated deals</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-primary" (click)="openCreateModal()">
+          <span class="btn-icon">➕</span> Add New Account
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Stats Bar -->
+    <div class="stats-overview">
+      <div class="stat-pill">
+        <span class="stat-pill-label">Total Accounts</span>
+        <span class="stat-pill-val">{{ customers.length }}</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-pill-label">Active Clients</span>
+        <span class="stat-pill-val highlight-green">{{ (filteredCustomers.length) }}</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-pill-label">Total Client Value</span>
+        <span class="stat-pill-val highlight-blue">
+          ${{ getTotalClientValue().toLocaleString() }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Controls Bar -->
+    <div class="control-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input
+          id="customer-search"
+          name="customerSearch"
+          type="text"
+          class="form-control"
+          placeholder="Search accounts by company, contact, or industry..."
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="applyFilter()"
+        />
+      </div>
+
+      <div class="filter-group">
+        <select
+          id="customer-filter-industry"
+          name="customerFilterIndustry"
+          class="form-select"
+          [(ngModel)]="selectedIndustry"
+          (ngModelChange)="applyFilter()"
+        >
+          <option value="All">All Industries</option>
+          @for (ind of industries; track ind) {
+          <option [value]="ind">{{ ind }}</option>
+          }
+        </select>
+
+        <select
+          id="customer-filter-status"
+          name="customerFilterStatus"
+          class="form-select"
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="applyFilter()"
+        >
+          <option value="All">All Statuses</option>
+          <option value="Active">🟢 Active</option>
+          <option value="Inactive">🟡 Inactive</option>
+          <option value="Churned">🔴 Churned</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Main Content & Drawer -->
+    <div class="content-wrapper" [class.has-drawer]="selectedCustomer !== null">
+      <!-- Customer Table Card -->
+      <div class="customer-card">
+        <div class="table-responsive-wrapper">
+          <table class="customer-table">
+            <thead>
+              <tr>
+                <th>Company & Contact</th>
+                <th>Industry</th>
+                <th>Contact Info</th>
+                <th>Status</th>
+                <th>Lifetime Value</th>
+                <th>Deals</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (filteredCustomers.length === 0) {
+              <tr>
+                <td colspan="7" class="empty-cell">
+                  <div class="empty-state">
+                    <span class="empty-icon">🏢</span>
+                    <h4>No customer accounts found</h4>
+                    <p>Try adjusting your search criteria or add a new account.</p>
+                  </div>
+                </td>
+              </tr>
+              }
+
+              @for (cust of filteredCustomers; track cust.id) {
+              <tr
+                class="customer-row"
+                [class.selected]="selectedCustomer?.id === cust.id"
+                (click)="selectCustomer(cust)"
+              >
+                <td>
+                  <div class="cust-identity">
+                    <div class="cust-avatar">{{ cust.companyName ? cust.companyName[0] : '🏢' }}</div>
+                    <div>
+                      <strong class="company-name">{{ cust.companyName }}</strong>
+                      <span class="contact-name">👤 {{ cust.contactName }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="industry-badge">{{ cust.industry }}</span>
+                </td>
+                <td>
+                  <div class="contact-meta">
+                    <a href="mailto:{{ cust.email }}" (click)="$event.stopPropagation()">✉️ {{ cust.email }}</a>
+                    <span class="phone-meta">📞 {{ cust.phone }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="status-pill" [class]="getStatusBadgeClass(cust.status)">
+                    {{ cust.status }}
+                  </span>
+                </td>
+                <td>
+                  <strong class="total-spent">${{ (cust.totalSpent || 0).toLocaleString() }}</strong>
+                </td>
+                <td>
+                  <span class="deals-count-pill">{{ cust.dealsCount || 0 }} deals</span>
+                </td>
+                <td class="text-end action-cell">
+                  <div class="btn-group-actions" (click)="$event.stopPropagation()">
+                    <button
+                      class="btn btn-sm btn-outline-secondary"
+                      title="Edit Customer"
+                      (click)="openEditModal(cust, $event)"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      class="btn btn-sm btn-outline-danger"
+                      title="Delete Account"
+                      (click)="deleteCustomer(cust.id, $event)"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Mobile/Tablet Drawer Backdrop -->
+      @if (selectedCustomer) {
+      <div class="drawer-backdrop" (click)="closeDrawer()" aria-hidden="true"></div>
+      }
+
+      <!-- Customer Detail Drawer -->
+      @if (selectedCustomer) {
+      <aside class="customer-drawer animate-slide-left" aria-label="Customer Details">
+        <div class="drawer-header">
+          <div>
+            <h3>{{ selectedCustomer.companyName }}</h3>
+            <span class="status-pill" [class]="getStatusBadgeClass(selectedCustomer.status)">
+              {{ selectedCustomer.status }}
+            </span>
+          </div>
+          <button type="button" class="close-btn" (click)="closeDrawer()" aria-label="Close">✕</button>
+        </div>
+
+        <div class="drawer-body">
+          <div class="cust-summary-box">
+            <div class="summary-item">
+              <span class="label">Primary Contact</span>
+              <span class="val">{{ selectedCustomer.contactName }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Industry</span>
+              <span class="val">{{ selectedCustomer.industry }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Lifetime Revenue</span>
+              <span class="val highlight-green">${{ (selectedCustomer.totalSpent || 0).toLocaleString() }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Location</span>
+              <span class="val">{{ selectedCustomer.city || 'Remote' }}{{ selectedCustomer.country ? ', ' + selectedCustomer.country : '' }}</span>
+            </div>
+          </div>
+
+          <div class="contact-links">
+            <a class="btn btn-sm btn-outline-primary" href="mailto:{{ selectedCustomer.email }}">
+              ✉️ Email Contact
+            </a>
+            <a class="btn btn-sm btn-outline-secondary" href="tel:{{ selectedCustomer.phone }}">
+              📞 Call
+            </a>
+          </div>
+
+          <!-- Associated Deals Section -->
+          <div class="associated-deals-section">
+            <h5>Associated Pipeline Deals ({{ customerDeals.length }})</h5>
+            @if (customerDeals.length === 0) {
+            <p class="no-deals-text">No active deals found for this account.</p>
+            } @else {
+            <div class="deals-mini-list">
+              @for (deal of customerDeals; track deal.id) {
+              <div class="mini-deal-card">
+                <div class="mini-deal-header">
+                  <strong>{{ deal.title }}</strong>
+                  <span class="mini-deal-amount">${{ (deal.amount || 0).toLocaleString() }}</span>
+                </div>
+                <div class="mini-deal-footer">
+                  <span class="stage-tag">{{ deal.stage }}</span>
+                  <span class="prob-tag">{{ deal.probability }}%</span>
+                </div>
+              </div>
+              }
+            </div>
+            }
+          </div>
+
+          <div class="drawer-footer-actions">
+            <button class="btn btn-primary w-100 mb-2" (click)="openEditModal(selectedCustomer)">
+              Edit Account Info
+            </button>
+            <button class="btn btn-outline-danger w-100" (click)="deleteCustomer(selectedCustomer.id)">
+              Delete Customer
+            </button>
+          </div>
+        </div>
+      </aside>
+      }
+    </div>
+
+    <!-- Modal Form (Create / Edit Customer) -->
+    @if (showModal) {
+    <div class="modal-backdrop-custom" (click)="closeModal()">
+      <div class="modal-dialog-custom" (click)="$event.stopPropagation()">
+        <div class="modal-header-custom">
+          <h3>{{ isEditing ? 'Edit Customer Account' : 'Add New Customer Account' }}</h3>
+          <button type="button" class="close-btn" (click)="closeModal()">✕</button>
+        </div>
+
+        <form [formGroup]="customerForm" (ngSubmit)="saveCustomer()">
+          <div class="modal-body-custom">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="customer-company-name" class="form-label">Company / Organization *</label>
+                <input
+                  id="customer-company-name"
+                  name="companyName"
+                  type="text"
+                  class="form-control"
+                  formControlName="companyName"
+                  placeholder="e.g. Acme Cloud"
+                  autocomplete="organization"
+                  [class.is-invalid]="customerForm.get('companyName')?.invalid && customerForm.get('companyName')?.touched"
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="customer-contact-name" class="form-label">Primary Contact Name *</label>
+                <input
+                  id="customer-contact-name"
+                  name="contactName"
+                  type="text"
+                  class="form-control"
+                  formControlName="contactName"
+                  placeholder="e.g. John Doe"
+                  autocomplete="name"
+                  [class.is-invalid]="customerForm.get('contactName')?.invalid && customerForm.get('contactName')?.touched"
+                />
+              </div>
+
+              <div class="col-md-6">
+                <label for="customer-email" class="form-label">Email Address *</label>
+                <input
+                  id="customer-email"
+                  name="email"
+                  type="email"
+                  class="form-control"
+                  formControlName="email"
+                  placeholder="contact@acme.com"
+                  autocomplete="email"
+                  [class.is-invalid]="customerForm.get('email')?.invalid && customerForm.get('email')?.touched"
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="customer-phone" class="form-label">Phone *</label>
+                <input
+                  id="customer-phone"
+                  name="phone"
+                  type="text"
+                  class="form-control"
+                  formControlName="phone"
+                  placeholder="+1 (555) 123-4567"
+                  autocomplete="tel"
+                />
+              </div>
+
+              <div class="col-md-6">
+                <label for="customer-industry" class="form-label">Industry</label>
+                <select id="customer-industry" name="industry" class="form-select" formControlName="industry">
+                  @for (ind of industries; track ind) {
+                  <option [value]="ind">{{ ind }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label for="customer-status" class="form-label">Status</label>
+                <select id="customer-status" name="status" class="form-select" formControlName="status">
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                  <option value="Churned">Churned</option>
+                </select>
+              </div>
+
+              <div class="col-md-6">
+                <label for="customer-city" class="form-label">City, State</label>
+                <input
+                  id="customer-city"
+                  name="city"
+                  type="text"
+                  class="form-control"
+                  formControlName="city"
+                  placeholder="San Francisco, CA"
+                  autocomplete="address-level2"
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="customer-country" class="form-label">Country</label>
+                <input
+                  id="customer-country"
+                  name="country"
+                  type="text"
+                  class="form-control"
+                  formControlName="country"
+                  placeholder="USA"
+                  autocomplete="country-name"
+                />
+              </div>
+
+              <div class="col-md-6">
+                <label for="customer-total-spent" class="form-label">Lifetime Spend ($)</label>
+                <input
+                  id="customer-total-spent"
+                  name="totalSpent"
+                  type="number"
+                  class="form-control"
+                  formControlName="totalSpent"
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="customer-deals-count" class="form-label">Completed Deals Count</label>
+                <input
+                  id="customer-deals-count"
+                  name="dealsCount"
+                  type="number"
+                  class="form-control"
+                  formControlName="dealsCount"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer-custom">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary">
+              {{ isEditing ? 'Save Changes' : 'Create Account' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    }
+  </div>
+</app-dashboard-layout>

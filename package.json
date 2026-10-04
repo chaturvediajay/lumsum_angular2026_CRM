@@ -1,0 +1,67 @@
+{
+  "name": "lumsum-angular2026-crm",
+  "version": "1.0.0",
+  "description": "Enterprise Angular 22 CRM application for Lumsum with Leads, Deals Kanban pipeline, Customer 360, Activity scheduler, and CRM telemetry integrated with lumsum_2026 JWT authentication.",
+  "author": "Ajay Chaturvedi <chaturvedi.ajay85@gmail.com>",
+  "license": "UNLICENSED",
+  "homepage": "https://www.lumsumpro.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chaturvediajay/lumsum_angular2026_CRM.git"
+  },
+  "bugs": {
+    "url": "https://github.com/chaturvediajay/lumsum_angular2026_CRM/issues"
+  },
+  "keywords": [
+    "crm",
+    "angular",
+    "angular-22",
+    "kanban-deals",
+    "leads-management",
+    "customer-360",
+    "activity-planner",
+    "bootstrap-5",
+    "vitest",
+    "jwt-authentication",
+    "enterprise-app"
+  ],
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve --port 4201",
+    "prod-local": "ng serve --port 4201 --configuration production",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "build:prod": "ng build --configuration production",
+    "test": "ng test"
+  },
+  "private": true,
+  "packageManager": "npm@11.13.0",
+  "dependencies": {
+    "@angular/common": "^22.0.1",
+    "@angular/compiler": "^22.0.1",
+    "@angular/core": "^22.0.1",
+    "@angular/forms": "^22.0.1",
+    "@angular/platform-browser": "^22.0.1",
+    "@angular/router": "^22.0.1",
+    "@ng-bootstrap/ng-bootstrap": "^21.0.0",
+    "@popperjs/core": "^2.11.8",
+    "bootstrap": "^5.3.8",
+    "jwt-decode": "^4.0.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^22.0.1",
+    "@angular/cli": "^22.0.1",
+    "@angular/compiler-cli": "^22.0.1",
+    "@angular/localize": "^22.0.1",
+    "jsdom": "^28.0.0",
+    "prettier": "^3.8.1",
+    "typescript": "~6.0.3",
+    "vitest": "^4.0.8"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "esbuild@0.27.7": true
+  }
+}
