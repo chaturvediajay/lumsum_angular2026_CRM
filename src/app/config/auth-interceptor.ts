@@ -124,7 +124,11 @@ export class AuthInterceptor implements HttpInterceptor {
         : '';
     if (errorMsg.includes('revoked') || errorMsg.includes('terminated')) {
       console.warn('Session has been revoked or terminated on server; logging out immediately');
-      this.userService.clearSession();
+      if (this.userService.redirectToAuthApp) {
+        this.userService.redirectToAuthApp(window.location.href, { sessionTerminated: 'true' });
+      } else {
+        this.userService.clearSession();
+      }
       this.router.navigate(['/'], {
         queryParams: { sessionTerminated: 'true' },
       });
@@ -136,7 +140,11 @@ export class AuthInterceptor implements HttpInterceptor {
     // If no refresh token available, session is expired
     if (!refreshToken) {
       console.warn('Unauthorized (401) with no refresh token available; clearing session');
-      this.userService.clearSession();
+      if (this.userService.redirectToAuthApp) {
+        this.userService.redirectToAuthApp(window.location.href, { sessionExpired: 'true' });
+      } else {
+        this.userService.clearSession();
+      }
       this.router.navigate(['/'], {
         queryParams: { sessionExpired: 'true' },
       });
@@ -155,7 +163,6 @@ export class AuthInterceptor implements HttpInterceptor {
         }),
         catchError((err) => {
           this.isRefreshing = false;
-          this.userService.clearSession();
           const isConnError =
             err?.status === 0 || err?.status === 502 || err?.status === 503 || err?.status === 504;
           const isRevoked =
@@ -163,12 +170,20 @@ export class AuthInterceptor implements HttpInterceptor {
             (err.error.message.toLowerCase().includes('revoked') ||
               err.error.message.toLowerCase().includes('terminated') ||
               err.error.message.toLowerCase().includes('not in database'));
+          const queryParams: Record<string, string> = isConnError
+            ? { connectionRefused: 'true' }
+            : isRevoked
+            ? { sessionTerminated: 'true' }
+            : { sessionExpired: 'true' };
+
+          if (this.userService.redirectToAuthApp) {
+            this.userService.redirectToAuthApp(window.location.href, queryParams);
+          } else {
+            this.userService.clearSession();
+          }
+
           this.router.navigate(['/'], {
-            queryParams: isConnError
-              ? { connectionRefused: 'true' }
-              : isRevoked
-              ? { sessionTerminated: 'true' }
-              : { sessionExpired: 'true' },
+            queryParams,
           });
           return throwError(() => err);
         })

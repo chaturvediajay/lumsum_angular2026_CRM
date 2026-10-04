@@ -59,7 +59,11 @@ export class App implements OnInit, OnDestroy {
     if (token) {
       if (!this.userService.isTokenValid()) {
         console.warn('Click event detected invalid or expired JWT token. Cleaning session.');
-        this.userService.clearSession();
+        if (this.userService.redirectToAuthApp) {
+          this.userService.redirectToAuthApp(window.location.href, { sessionExpired: 'true' });
+        } else {
+          this.userService.clearSession();
+        }
         this.router.navigate(['/'], {
           queryParams: { sessionExpired: 'true' },
         });
@@ -67,7 +71,11 @@ export class App implements OnInit, OnDestroy {
       }
     } else if (!isLoginPage) {
       console.warn('Click event detected missing JWT token on protected view. Cleaning session.');
-      this.userService.clearSession();
+      if (this.userService.redirectToAuthApp) {
+        this.userService.redirectToAuthApp(window.location.href, { sessionExpired: 'true' });
+      } else {
+        this.userService.clearSession();
+      }
       this.router.navigate(['/'], {
         queryParams: { sessionExpired: 'true' },
       });

@@ -93,6 +93,9 @@ export class Login implements OnInit {
       return;
     } else {
       this.userService.clearSession();
+      if (typeof window !== "undefined") {
+        this.userService.redirectToAuthApp(window.location.origin + "/home");
+      }
     }
 
     // Auto-strip spaces from email field as user types
@@ -103,6 +106,10 @@ export class Login implements OnInit {
         });
       }
     });
+  }
+
+  goToAuthApp(): void {
+    this.userService.redirectToAuthApp(window.location.origin + "/home");
   }
 
   // Getter for easy access to form controls

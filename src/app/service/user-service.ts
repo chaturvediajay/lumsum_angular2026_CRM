@@ -20,7 +20,95 @@ import { SessionSyncService } from "./session-sync.service";
 export class UserService {
   private apiUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient, private sessionSync: SessionSyncService) {}
+  constructor(private http: HttpClient, private sessionSync: SessionSyncService) {
+    this.consumeIncomingTokensFromUrl();
+  }
+
+  /**
+   * Checks URL query parameters for SSO tokens passed from localhost:4200 upon redirection.
+   * If found, sets them in sessionStorage, syncs with sibling tabs, and strips query parameters.
+   */
+  consumeIncomingTokensFromUrl(): boolean {
+    if (typeof window === "undefined" || !window.location || !window.sessionStorage) {
+      return false;
+    }
+
+    try {
+      const url = new URL(window.location.href);
+      const accessToken = url.searchParams.get("access_token") || url.searchParams.get("token");
+      if (!accessToken) {
+        return false;
+      }
+
+      sessionStorage.setItem("access_token", accessToken);
+      sessionStorage.setItem("token_type", "Bearer");
+
+      const refreshToken = url.searchParams.get("refresh_token");
+      if (refreshToken) sessionStorage.setItem("refresh_token", refreshToken);
+
+      const userId = url.searchParams.get("user_id");
+      if (userId) sessionStorage.setItem("user_id", userId);
+
+      const username = url.searchParams.get("username");
+      if (username) sessionStorage.setItem("username", username);
+
+      const email = url.searchParams.get("email");
+      if (email) sessionStorage.setItem("email", email);
+
+      const roles = url.searchParams.get("roles");
+      if (roles) sessionStorage.setItem("roles", roles);
+
+      if (this.sessionSync?.writeSnapshot) {
+        this.sessionSync.writeSnapshot(
+          accessToken,
+          refreshToken || "",
+          userId || "",
+          username || "",
+          email || "",
+          roles || "[]"
+        );
+      }
+
+      // Clean the query parameters from browser address bar
+      url.searchParams.delete("access_token");
+      url.searchParams.delete("token");
+      url.searchParams.delete("refresh_token");
+      url.searchParams.delete("user_id");
+      url.searchParams.delete("username");
+      url.searchParams.delete("email");
+      url.searchParams.delete("roles");
+
+      const searchStr = url.searchParams.toString();
+      const cleanUrl = url.pathname + (searchStr ? "?" + searchStr : "") + url.hash;
+      window.history.replaceState({}, document.title, cleanUrl);
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Redirects the browser to localhost:4200 (authAppUrl) for login and token generation
+   * when accessToken is not valid or expired.
+   */
+  redirectToAuthApp(returnUrl?: string, queryParams?: Record<string, string>): void {
+    this.clearSession();
+    if (typeof window !== "undefined" && window.location) {
+      try {
+        const baseAuthUrl = (environment as any).authAppUrl || "http://localhost:4200";
+        const authUrl = new URL(baseAuthUrl);
+        const currentUrl = returnUrl || window.location.href;
+        authUrl.searchParams.set("returnUrl", currentUrl);
+        if (queryParams) {
+          Object.entries(queryParams).forEach(([k, v]) => authUrl.searchParams.set(k, v));
+        }
+        window.location.href = authUrl.toString();
+      } catch (e) {
+        console.error("Failed to redirect to auth app:", e);
+      }
+    }
+  }
 
   getDeviceId(): string {
     if (typeof window === "undefined" || !window.localStorage) {
@@ -393,6 +481,7 @@ export class UserService {
    * If token is missing, malformed, or expired, session is cleared and false is returned.
    */
   isTokenValid(): boolean {
+    this.consumeIncomingTokensFromUrl();
     const token = sessionStorage.getItem("access_token");
     if (!token || token.trim() === "" || token === "null" || token === "undefined") {
       this.clearSession();

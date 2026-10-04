@@ -132,8 +132,16 @@ export class DashboardLayout implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    if (sessionStorage.getItem("access_token") === null) {
-      this.router.navigate(["/"]);
+    const isValid = typeof this.userService?.isTokenValid === 'function'
+      ? this.userService.isTokenValid()
+      : sessionStorage.getItem("access_token") !== null;
+
+    if (!isValid) {
+      if (typeof this.userService?.redirectToAuthApp === 'function') {
+        this.userService.redirectToAuthApp(window.location.href);
+      } else {
+        this.router.navigate(["/"]);
+      }
       return;
     }
 
@@ -217,9 +225,17 @@ export class DashboardLayout implements OnInit {
   }
 
   checkTokenOnClick(explicit = false): boolean {
-    if (!this.userService.isTokenValid()) {
+    const isValid = typeof this.userService?.isTokenValid === 'function'
+      ? this.userService.isTokenValid()
+      : sessionStorage.getItem("access_token") !== null;
+
+    if (!isValid) {
       console.warn("Click detected invalid or expired JWT token. Cleaning session and redirecting to login.");
-      this.userService.clearSession();
+      if (typeof this.userService?.redirectToAuthApp === 'function') {
+        this.userService.redirectToAuthApp(window.location.href, { sessionExpired: "true" });
+      } else {
+        this.userService?.clearSession?.();
+      }
       this.router.navigate(["/"], {
         queryParams: { sessionExpired: "true" },
       });
@@ -275,12 +291,20 @@ export class DashboardLayout implements OnInit {
   logout(): void {
     this.commonHttp.logout().subscribe({
       next: () => {
-        this.userService.clearSession();
-        this.router.navigate(["/"]);
+        this.userService?.clearSession?.();
+        if (typeof this.userService?.redirectToAuthApp === 'function') {
+          this.userService.redirectToAuthApp(window.location.origin + "/home", { logout: "true" });
+        } else {
+          this.router.navigate(["/"]);
+        }
       },
       error: () => {
-        this.userService.clearSession();
-        this.router.navigate(["/"]);
+        this.userService?.clearSession?.();
+        if (typeof this.userService?.redirectToAuthApp === 'function') {
+          this.userService.redirectToAuthApp(window.location.origin + "/home", { logout: "true" });
+        } else {
+          this.router.navigate(["/"]);
+        }
       },
     });
   }

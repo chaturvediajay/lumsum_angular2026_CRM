@@ -52,6 +52,20 @@
         <p class="form-subtitle">Sign in to access your dashboard</p>
       </div>
 
+      <!-- SSO Redirection Card -->
+      <div class="sso-redirect-card p-3 mb-3 text-center border rounded bg-light">
+        <p class="mb-2 text-muted small fw-medium">
+          🔐 Authentication is managed by Lumsum Main Portal (port 4200).
+        </p>
+        <button
+          type="button"
+          class="btn btn-primary btn-sm w-100 fw-semibold"
+          (click)="goToAuthApp()"
+        >
+          Sign In via Lumsum (localhost:4200) →
+        </button>
+      </div>
+
       <!-- Alert Messages -->
       <div class="alerts-container">
         @if (errorMessage) {
