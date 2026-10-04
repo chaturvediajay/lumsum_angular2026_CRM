@@ -1,22 +1,32 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { CrmService } from './crm.service';
 import { firstValueFrom } from 'rxjs';
 
 describe('CrmService', () => {
   let service: CrmService;
+  let httpTestingController: HttpTestingController;
 
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
     service = TestBed.inject(CrmService);
+    httpTestingController = TestBed.inject(HttpTestingController);
+
+    // Flush initial synchronization requests from constructor
+    const initialReqs = httpTestingController.match(() => true);
+    initialReqs.forEach((r) => r.flush([]));
   });
 
   afterEach(() => {
+    const pendingReqs = httpTestingController.match(() => true);
+    pendingReqs.forEach((r) => r.flush([]));
     localStorage.clear();
+    sessionStorage.clear();
   });
 
   it('should be created and initialized with demo records', async () => {
@@ -94,5 +104,85 @@ describe('CrmService', () => {
     expect(stats.totalPipelineValue).toBeGreaterThan(0);
     expect(stats.stageDistribution.length).toBe(6);
     expect(stats.leadsBySource.length).toBeGreaterThan(0);
+  });
+
+  it('should retrieve user assigned leads via getMyLeads()', async () => {
+    const leadsPromise = firstValueFrom(service.getMyLeads());
+
+    const req = httpTestingController.expectOne((r) => r.url.includes('/leads/my'));
+    expect(req.request.method).toBe('GET');
+    req.flush([{ id: 101, name: 'Lead A', assignedTo: 'admin' }] as any);
+
+    const leads = await leadsPromise;
+    expect(Array.isArray(leads)).toBe(true);
+    expect(leads.length).toBe(1);
+    expect(leads[0].name).toBe('Lead A');
+  });
+
+  it('should retrieve user assigned deals via getMyDeals()', async () => {
+    const dealsPromise = firstValueFrom(service.getMyDeals());
+
+    const req = httpTestingController.expectOne((r) => r.url.includes('/deals/my'));
+    expect(req.request.method).toBe('GET');
+    req.flush([{ id: 201, title: 'Cloud Migration Deal', assignedTo: 'admin' }] as any);
+
+    const deals = await dealsPromise;
+    expect(Array.isArray(deals)).toBe(true);
+    expect(deals.length).toBe(1);
+    expect(deals[0].title).toBe('Cloud Migration Deal');
+  });
+
+  it('should retrieve user assigned activities via getMyActivities()', async () => {
+    const activitiesPromise = firstValueFrom(service.getMyActivities());
+
+    const req = httpTestingController.expectOne((r) => r.url.includes('/activities/my'));
+    expect(req.request.method).toBe('GET');
+    req.flush([{ id: 301, title: 'Follow up call', assignee: 'admin' }] as any);
+
+    const activities = await activitiesPromise;
+    expect(Array.isArray(activities)).toBe(true);
+    expect(activities.length).toBe(1);
+    expect(activities[0].title).toBe('Follow up call');
+  });
+
+  it('should return user CRM profile metrics via getUserCrmProfile()', async () => {
+    const mockProfile = {
+      username: 'admin',
+      authSource: 'lumsum_2026',
+      tokenValidated: true,
+      assignedDealsCount: 3,
+      assignedLeadsCount: 5,
+    };
+
+    const profilePromise = firstValueFrom(service.getUserCrmProfile());
+
+    const req = httpTestingController.expectOne((r) => r.url.includes('/crm/me'));
+    expect(req.request.method).toBe('GET');
+    req.flush(mockProfile);
+
+    const profile = await profilePromise;
+    expect(profile).toBeDefined();
+    expect(profile.username).toBe('admin');
+    expect(profile.assignedDealsCount).toBe(3);
+  });
+
+  it('should report token status via checkTokenStatus()', async () => {
+    const mockStatus = {
+      valid: true,
+      username: 'admin',
+      roles: ['ROLE_ADMIN'],
+      remainingTimeMs: 3600000,
+    };
+
+    const statusPromise = firstValueFrom(service.checkTokenStatus());
+
+    const req = httpTestingController.expectOne((r) => r.url.includes('/token-status'));
+    expect(req.request.method).toBe('GET');
+    req.flush(mockStatus);
+
+    const status = await statusPromise;
+    expect(status).toBeDefined();
+    expect(status.valid).toBe(true);
+    expect(status.username).toBe('admin');
   });
 });

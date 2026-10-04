@@ -875,4 +875,71 @@ export class CrmService {
       )
       .subscribe();
   }
+
+  // ==================== USER WORKLOAD & TOKEN INTEGRATION ====================
+  public getMyLeads(): Observable<Lead[]> {
+    const crmBase = `${this.apiUrl.replace(/\/+$/, '')}/v1/crm`;
+    return this.http.get<Lead[]>(`${crmBase}/leads/my`, { headers: this.getAuthHeaders() }).pipe(
+      catchError(() => {
+        const username = (sessionStorage.getItem('username') || '').toLowerCase();
+        return of(
+          this.leadsSubject.value.filter(
+            (l) => !username || (l.assignedTo && l.assignedTo.toLowerCase() === username)
+          )
+        );
+      })
+    );
+  }
+
+  public getMyDeals(): Observable<Deal[]> {
+    const crmBase = `${this.apiUrl.replace(/\/+$/, '')}/v1/crm`;
+    return this.http.get<Deal[]>(`${crmBase}/deals/my`, { headers: this.getAuthHeaders() }).pipe(
+      catchError(() => {
+        const username = (sessionStorage.getItem('username') || '').toLowerCase();
+        return of(
+          this.dealsSubject.value.filter(
+            (d) => !username || (d.assignedTo && d.assignedTo.toLowerCase() === username)
+          )
+        );
+      })
+    );
+  }
+
+  public getMyActivities(): Observable<Activity[]> {
+    const crmBase = `${this.apiUrl.replace(/\/+$/, '')}/v1/crm`;
+    return this.http.get<Activity[]>(`${crmBase}/activities/my`, { headers: this.getAuthHeaders() }).pipe(
+      catchError(() => {
+        const username = (sessionStorage.getItem('username') || '').toLowerCase();
+        return of(
+          this.activitiesSubject.value.filter(
+            (a) => !username || (a.assignee && a.assignee.toLowerCase() === username)
+          )
+        );
+      })
+    );
+  }
+
+  public getUserCrmProfile(): Observable<any> {
+    const crmBase = `${this.apiUrl.replace(/\/+$/, '')}/v1/crm`;
+    return this.http.get<any>(`${crmBase}/me`, { headers: this.getAuthHeaders() }).pipe(
+      catchError(() => {
+        const username = sessionStorage.getItem('username') || 'Admin User';
+        return of({
+          username,
+          authSource: 'lumsum_2026',
+          tokenValidated: true,
+          assignedDealsCount: this.dealsSubject.value.length,
+          assignedLeadsCount: this.leadsSubject.value.length,
+          assignedActivitiesCount: this.activitiesSubject.value.length,
+        });
+      })
+    );
+  }
+
+  public checkTokenStatus(): Observable<any> {
+    const crmBase = `${this.apiUrl.replace(/\/+$/, '')}/v1/crm`;
+    return this.http.get<any>(`${crmBase}/token-status`, { headers: this.getAuthHeaders() }).pipe(
+      catchError(() => of({ valid: !!sessionStorage.getItem('access_token'), source: 'lumsum_2026' }))
+    );
+  }
 }

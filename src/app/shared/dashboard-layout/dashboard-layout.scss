@@ -567,6 +567,29 @@ $rose-500: #f43f5e;
   }
 }
 
+.topbar-sso-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #065f46;
+  white-space: nowrap;
+
+  .sso-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #10b981;
+    display: inline-block;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+  }
+}
+
 .topbar-dropdown {
   position: relative;
 }

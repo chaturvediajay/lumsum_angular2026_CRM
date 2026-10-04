@@ -33,6 +33,8 @@ export class Deals implements OnInit {
 
   searchTerm = '';
   selectedPriority: PriorityLevel | 'All' = 'All';
+  userFilter: 'All' | 'My' = 'All';
+  currentUsername = '';
 
   // Modal State
   showModal = false;
@@ -44,6 +46,7 @@ export class Deals implements OnInit {
     private crmService: CrmService,
     private fb: FormBuilder
   ) {
+    const defaultUser = sessionStorage.getItem('username') || 'Admin User';
     this.dealForm = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(3)]],
       customerId: [''],
@@ -54,12 +57,13 @@ export class Deals implements OnInit {
       probability: [20, [Validators.required, Validators.min(0), Validators.max(100)]],
       expectedCloseDate: [new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0], Validators.required],
       priority: ['Medium' as PriorityLevel, Validators.required],
-      assignedTo: ['Admin User'],
+      assignedTo: [defaultUser],
       notes: [''],
     });
   }
 
   ngOnInit(): void {
+    this.currentUsername = sessionStorage.getItem('username') || '';
     this.crmService.deals$.subscribe((deals) => {
       this.deals = deals;
     });
@@ -71,6 +75,12 @@ export class Deals implements OnInit {
 
   getDealsByStage(stage: DealStage): Deal[] {
     let list = this.deals.filter((d) => d.stage === stage);
+
+    if (this.userFilter === 'My' && this.currentUsername) {
+      list = list.filter(
+        (d) => d.assignedTo && d.assignedTo.toLowerCase() === this.currentUsername.toLowerCase()
+      );
+    }
 
     if (this.selectedPriority !== 'All') {
       list = list.filter((d) => d.priority === this.selectedPriority);

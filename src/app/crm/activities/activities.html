@@ -17,13 +17,34 @@
     <div class="control-bar">
       <!-- Activity Type Pills -->
       <div class="type-pills">
+        <div class="btn-group btn-group-sm me-2" role="group">
+          <button
+            type="button"
+            class="btn"
+            [class.btn-primary]="userFilter === 'All'"
+            [class.btn-outline-secondary]="userFilter !== 'All'"
+            (click)="setUserFilter('All')"
+          >
+            All Tasks ({{ activities.length }})
+          </button>
+          <button
+            type="button"
+            class="btn"
+            [class.btn-primary]="userFilter === 'My'"
+            [class.btn-outline-secondary]="userFilter !== 'My'"
+            (click)="setUserFilter('My')"
+          >
+            👤 My Tasks
+          </button>
+        </div>
+
         <button
           type="button"
           class="pill-btn"
           [class.active]="selectedType === 'All'"
           (click)="selectedType = 'All'; applyFilter()"
         >
-          All Activities
+          All Types
         </button>
         @for (t of types; track t) {
         <button

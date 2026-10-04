@@ -17,6 +17,9 @@ export class Home implements OnInit {
   priorityTasks: Activity[] = [];
   recentDeals: Deal[] = [];
   userName = "Admin";
+  userRoles: string[] = [];
+  userProfile: any = null;
+  tokenStatus: any = null;
 
   constructor(private crmService: CrmService) {}
 
@@ -26,8 +29,25 @@ export class Home implements OnInit {
       this.userName = savedName;
     }
 
+    const savedRoles = sessionStorage.getItem("roles");
+    if (savedRoles) {
+      try {
+        this.userRoles = JSON.parse(savedRoles);
+      } catch {
+        this.userRoles = [savedRoles];
+      }
+    }
+
     this.crmService.getStats().subscribe((stats) => {
       this.crmStats = stats;
+    });
+
+    this.crmService.getUserCrmProfile().subscribe((profile) => {
+      this.userProfile = profile;
+    });
+
+    this.crmService.checkTokenStatus().subscribe((status) => {
+      this.tokenStatus = status;
     });
 
     this.crmService.activities$.subscribe((acts) => {
@@ -58,18 +78,35 @@ export class Home implements OnInit {
       case "Closed Lost":
         return "stage-lost";
       default:
-        return "stage-default";
+        return "";
+    }
+  }
+
+  getActivityIcon(type: string): string {
+    switch (type) {
+      case "Call":
+        return "📞";
+      case "Meeting":
+        return "🤝";
+      case "Email":
+        return "✉️";
+      case "Task":
+        return "📋";
+      default:
+        return "📝";
     }
   }
 
   getPriorityClass(priority: string): string {
-    switch (priority?.toLowerCase()) {
-      case "high":
+    switch (priority) {
+      case "High":
         return "priority-high";
-      case "medium":
+      case "Medium":
         return "priority-medium";
-      default:
+      case "Low":
         return "priority-low";
+      default:
+        return "";
     }
   }
 }

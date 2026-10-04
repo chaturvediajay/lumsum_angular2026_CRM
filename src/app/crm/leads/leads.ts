@@ -43,10 +43,14 @@ export class Leads implements OnInit {
   statusOptions: LeadStatus[] = ['New', 'Contacted', 'In Discussion', 'Qualified', 'Lost'];
   sourceOptions: LeadSource[] = ['Website', 'Referral', 'LinkedIn', 'Campaign', 'Cold Call', 'Event'];
 
+  userFilter: 'All' | 'My' = 'All';
+  currentUsername = '';
+
   constructor(
     private crmService: CrmService,
     private fb: FormBuilder
   ) {
+    const defaultUser = sessionStorage.getItem('username') || 'Admin User';
     this.leadForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2)]],
       company: ['', Validators.required],
@@ -57,12 +61,13 @@ export class Leads implements OnInit {
       score: [70, [Validators.required, Validators.min(0), Validators.max(100)]],
       source: ['Website', Validators.required],
       estimatedValue: [25000, [Validators.required, Validators.min(0)]],
-      assignedTo: ['Admin User'],
+      assignedTo: [defaultUser],
       notes: [''],
     });
   }
 
   ngOnInit(): void {
+    this.currentUsername = sessionStorage.getItem('username') || '';
     this.crmService.leads$.subscribe((leads) => {
       this.leads = leads;
       this.applyFilter();
@@ -71,6 +76,13 @@ export class Leads implements OnInit {
 
   applyFilter(): void {
     let result = [...this.leads];
+
+    // User Filter
+    if (this.userFilter === 'My' && this.currentUsername) {
+      result = result.filter(
+        (l) => l.assignedTo && l.assignedTo.toLowerCase() === this.currentUsername.toLowerCase()
+      );
+    }
 
     // Status Filter
     if (this.selectedStatus !== 'All') {
@@ -121,6 +133,11 @@ export class Leads implements OnInit {
     this.applyFilter();
   }
 
+  setUserFilter(filter: 'All' | 'My'): void {
+    this.userFilter = filter;
+    this.applyFilter();
+  }
+
   openCreateModal(): void {
     this.isEditing = false;
     this.editingLeadId = null;
@@ -134,7 +151,7 @@ export class Leads implements OnInit {
       score: 70,
       source: 'Website',
       estimatedValue: 25000,
-      assignedTo: 'Admin User',
+      assignedTo: this.currentUsername || 'Admin User',
       notes: '',
     });
     this.showModal = true;

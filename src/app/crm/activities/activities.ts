@@ -24,6 +24,8 @@ export class Activities implements OnInit {
 
   selectedType: ActivityType | 'All' = 'All';
   showCompleted = true;
+  userFilter: 'All' | 'My' = 'All';
+  currentUsername = '';
 
   showModal = false;
   activityForm: FormGroup;
@@ -34,6 +36,7 @@ export class Activities implements OnInit {
     private crmService: CrmService,
     private fb: FormBuilder
   ) {
+    const defaultUser = sessionStorage.getItem('username') || 'Admin User';
     this.activityForm = this.fb.group({
       type: ['Call' as ActivityType, Validators.required],
       title: ['', [Validators.required, Validators.minLength(3)]],
@@ -41,20 +44,32 @@ export class Activities implements OnInit {
       relatedName: ['', Validators.required],
       dueDate: [new Date().toISOString().split('T')[0], Validators.required],
       priority: ['Medium' as PriorityLevel, Validators.required],
-      assignee: ['Admin User'],
+      assignee: [defaultUser],
       notes: [''],
     });
   }
 
   ngOnInit(): void {
+    this.currentUsername = sessionStorage.getItem('username') || '';
     this.crmService.activities$.subscribe((acts) => {
       this.activities = acts;
       this.applyFilter();
     });
   }
 
+  setUserFilter(filter: 'All' | 'My'): void {
+    this.userFilter = filter;
+    this.applyFilter();
+  }
+
   applyFilter(): void {
     let list = [...this.activities];
+
+    if (this.userFilter === 'My' && this.currentUsername) {
+      list = list.filter(
+        (a) => a.assignee && a.assignee.toLowerCase() === this.currentUsername.toLowerCase()
+      );
+    }
 
     if (this.selectedType !== 'All') {
       list = list.filter((a) => a.type === this.selectedType);
@@ -111,7 +126,7 @@ export class Activities implements OnInit {
       relatedName: '',
       dueDate: new Date().toISOString().split('T')[0],
       priority: 'Medium',
-      assignee: 'Admin User',
+      assignee: this.currentUsername || 'Admin User',
       notes: '',
     });
     this.showModal = true;

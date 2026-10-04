@@ -43,6 +43,29 @@
         />
       </div>
 
+      <div class="filter-group d-flex align-items-center gap-1">
+        <div class="btn-group btn-group-sm" role="group">
+          <button
+            type="button"
+            class="btn"
+            [class.btn-primary]="userFilter === 'All'"
+            [class.btn-outline-secondary]="userFilter !== 'All'"
+            (click)="userFilter = 'All'"
+          >
+            All Deals ({{ deals.length }})
+          </button>
+          <button
+            type="button"
+            class="btn"
+            [class.btn-primary]="userFilter === 'My'"
+            [class.btn-outline-secondary]="userFilter !== 'My'"
+            (click)="userFilter = 'My'"
+          >
+            👤 My Deals
+          </button>
+        </div>
+      </div>
+
       <div class="filter-group">
         <label for="deals-filter-priority" class="filter-label">Priority:</label>
         <select id="deals-filter-priority" name="dealsFilterPriority" class="form-select priority-select" [(ngModel)]="selectedPriority">
