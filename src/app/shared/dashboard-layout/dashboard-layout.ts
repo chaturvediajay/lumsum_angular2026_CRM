@@ -88,15 +88,9 @@ export class DashboardLayout implements OnInit {
       badgeVariant: "info",
     },
     {
-      label: "Users",
+      label: "Users & Sessions",
       icon: "👥",
       route: "/users",
-      section: "Administration",
-    },
-    {
-      label: "Sessions",
-      icon: "🛡️",
-      route: "/sessions",
       section: "Administration",
     },
   ];
@@ -271,8 +265,8 @@ export class DashboardLayout implements OnInit {
     if (match) {
       this.currentRouteTitle = match.label;
       this.currentRouteSection = match.section;
-    } else if (cleanUrl.includes("users")) {
-      this.currentRouteTitle = "User Directory";
+    } else if (cleanUrl.includes("users") || cleanUrl.includes("sessions")) {
+      this.currentRouteTitle = "Users & Sessions";
       this.currentRouteSection = "Administration";
     } else {
       this.currentRouteTitle = "CRM Dashboard";
