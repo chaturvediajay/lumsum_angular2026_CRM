@@ -289,6 +289,86 @@
       <div class="content-wrapper-fluid">
         <ng-content></ng-content>
       </div>
+
+      <!-- Modern Bootstrap Enterprise Footer -->
+      <footer class="app-bootstrap-footer bg-white border-top mt-auto py-3 px-4">
+        <div class="container-fluid p-0">
+          <!-- Top Row: Operational Status & System Defense Badges -->
+          <div class="row align-items-center gy-2 mb-2">
+            <div class="col-12 col-xl-auto d-flex align-items-center gap-2 flex-wrap">
+              <span class="d-inline-flex align-items-center gap-1 text-success small fw-semibold">
+                <span class="status-indicator-dot bg-success rounded-circle d-inline-block" style="width: 8px; height: 8px;"></span>
+                CRM Engine Operational
+              </span>
+              <span class="text-secondary opacity-50 d-none d-sm-inline">|</span>
+              <span class="badge bg-success-subtle text-success border border-success-subtle font-monospace">
+                🔐 SSO Active (lumsum_2026)
+              </span>
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace">
+                📈 Pipeline Engine
+              </span>
+              <span class="badge bg-info-subtle text-info border border-info-subtle font-monospace">
+                🎯 Lead Intelligence
+              </span>
+              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle font-monospace">
+                🌐 Multi-Device Sync
+              </span>
+            </div>
+
+            <div class="col-12 col-xl text-xl-end">
+              <div class="d-inline-flex align-items-center gap-2 flex-wrap small text-muted">
+                <span><strong class="text-dark">CRM Backend:</strong> Port 8082 (Spring Boot 4.1.1)</span>
+                <span class="text-secondary opacity-50 d-none d-sm-inline">•</span>
+                <span><strong class="text-dark">Auth:</strong> Port 8080 (Dual-Token JWT)</span>
+                <span class="text-secondary opacity-50 d-none d-sm-inline">•</span>
+                <span><strong class="text-dark">UI:</strong> Angular 21 (Bootstrap 5.3)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Row: Copyright, Architecture, Quick Links -->
+          <div class="row align-items-center pt-2 border-top border-light-subtle gy-2">
+            <div class="col-12 col-md-5 text-center text-md-start">
+              <p class="mb-0 text-muted small">
+                &copy; 2026 <strong class="text-dark">Lumsum CRM Platform</strong>. Integrated Enterprise Edition.
+                <span class="text-secondary opacity-50 ms-1 me-1">•</span>
+                <span class="badge bg-light text-secondary border font-monospace">CRM v2026.4.0</span>
+              </p>
+            </div>
+            <div class="col-12 col-md-7 text-center text-md-end">
+              <ul class="list-inline mb-0 small">
+                <li class="list-inline-item">
+                  <a routerLink="/home" class="text-secondary text-decoration-none hover-primary">Dashboard</a>
+                </li>
+                <li class="list-inline-item text-secondary opacity-50">•</li>
+                <li class="list-inline-item">
+                  <a routerLink="/leads" class="text-secondary text-decoration-none hover-primary">Leads</a>
+                </li>
+                <li class="list-inline-item text-secondary opacity-50">•</li>
+                <li class="list-inline-item">
+                  <a routerLink="/deals" class="text-secondary text-decoration-none hover-primary">Deals</a>
+                </li>
+                <li class="list-inline-item text-secondary opacity-50">•</li>
+                <li class="list-inline-item">
+                  <a routerLink="/customers" class="text-secondary text-decoration-none hover-primary">Customers</a>
+                </li>
+                <li class="list-inline-item text-secondary opacity-50">•</li>
+                <li class="list-inline-item">
+                  <a routerLink="/activities" class="text-secondary text-decoration-none hover-primary">Activities</a>
+                </li>
+                <li class="list-inline-item text-secondary opacity-50">•</li>
+                <li class="list-inline-item">
+                  <a routerLink="/reports" class="text-secondary text-decoration-none hover-primary">Reports</a>
+                </li>
+                <li class="list-inline-item text-secondary opacity-50">•</li>
+                <li class="list-inline-item">
+                  <a routerLink="/users" class="text-secondary text-decoration-none hover-primary">Users &amp; Sessions</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </footer>
     </main>
   </div>
 </div>
