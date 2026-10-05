@@ -88,16 +88,6 @@ export class Login implements OnInit {
       this.cdr.detectChanges();
     });
 
-    if (this.userService.isTokenValid()) {
-      this.router.navigate(["/home"]);
-      return;
-    } else {
-      this.userService.clearSession();
-      if (typeof window !== "undefined") {
-        this.userService.redirectToAuthApp(window.location.origin + "/home");
-      }
-    }
-
     // Auto-strip spaces from email field as user types
     this.loginForm.get("email")?.valueChanges.subscribe((value: string) => {
       if (value && /\s/.test(value)) {

@@ -479,9 +479,9 @@ export class UserService {
   /**
    * Synchronously checks if a valid, non-expired access token exists in sessionStorage.
    * If token is missing, malformed, or expired, session is cleared and false is returned.
+   * NOTE: Does NOT consume URL tokens — call consumeIncomingTokensFromUrl() explicitly before this if needed.
    */
   isTokenValid(): boolean {
-    this.consumeIncomingTokensFromUrl();
     const token = sessionStorage.getItem("access_token");
     if (!token || token.trim() === "" || token === "null" || token === "undefined") {
       this.clearSession();
