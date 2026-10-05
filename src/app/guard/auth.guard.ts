@@ -11,6 +11,9 @@ export const authGuard: CanActivateFn = (route, state) => {
   const userService = inject(UserService);
   const router = inject(Router);
 
+  // Consume any SSO tokens from URL if present (supports deep links)
+  userService.consumeIncomingTokensFromUrl();
+
   if (userService.isTokenValid()) {
     return true;
   }
@@ -49,9 +52,7 @@ export const guestGuard: CanActivateFn = (route, state) => {
   }
 
   // Step 3: No valid token at all. If this was an SSO attempt (had token in URL but it was bad), redirect back to auth app.
-  // Otherwise, just show the login page (allows direct navigation to localhost:4201).
   if (hadIncomingToken) {
-    // The token from SSO was invalid — force re-login
     if (typeof userService.redirectToAuthApp === 'function') {
       userService.redirectToAuthApp(window.location.origin + '/home', { sessionExpired: 'true' });
     }
