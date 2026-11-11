@@ -231,84 +231,13 @@ export class UserService {
   }
 
   /**
-   * Initializes both public + private IP caches.
-   * Called once on app startup via APP_INITIALIZER.
-   * Safe to call repeatedly — respects 10-minute TTL.
+   * Initializes client IP cache safely.
+   * Client IP is captured authoritatively and securely server-side via request.getRemoteAddr().
+   * In-browser WebRTC STUN probing and third-party IP scraping are disabled to prevent
+   * privacy intrusion and false-positive flags by security / threat scanners.
    */
   initClientIp(): void {
-    this.refreshPublicIpIfStale();
-    this.detectPrivateIp();
-  }
-
-  /**
-   * Fetches public IP from ipify.org if cache is stale or missing.
-   * Stores result in localStorage with a timestamp.
-   */
-  private refreshPublicIpIfStale(): void {
-    if (typeof window === "undefined" || !window.localStorage) return;
-    const ts = parseInt(localStorage.getItem(UserService.PUBLIC_IP_TS_KEY) || "0", 10);
-    const isFresh = Date.now() - ts < UserService.IP_CACHE_TTL_MS;
-    if (isFresh && localStorage.getItem(UserService.PUBLIC_IP_KEY)) return;
-
-    // Fetch from ipify (CORS-enabled, no API key required)
-    fetch("https://api.ipify.org?format=json", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data: { ip: string }) => {
-        if (data?.ip) {
-          localStorage.setItem(UserService.PUBLIC_IP_KEY, data.ip);
-          localStorage.setItem(UserService.PUBLIC_IP_TS_KEY, String(Date.now()));
-          console.debug("[ClientIP] Public IP resolved:", data.ip);
-        }
-      })
-      .catch(() => {
-        console.debug("[ClientIP] Public IP fetch failed (offline or blocked)");
-      });
-  }
-
-  /**
-   * Detects private/LAN IP using WebRTC RTCPeerConnection ICE candidates.
-   * This is purely local — no network traffic beyond STUN candidate generation.
-   * Stores result in localStorage.
-   */
-  private detectPrivateIp(): void {
-    if (typeof window === "undefined" || !window.RTCPeerConnection) return;
-    // Skip if cache is recent
-    if (localStorage.getItem(UserService.PRIVATE_IP_KEY) &&
-        localStorage.getItem(UserService.PRIVATE_IP_KEY) !== "unknown") {
-      return;
-    }
-
-    try {
-      const pc = new RTCPeerConnection({ iceServers: [] });
-      // Dummy data channel forces ICE candidate generation
-      pc.createDataChannel("");
-
-      pc.createOffer().then((offer) => pc.setLocalDescription(offer)).catch(() => {});
-
-      pc.onicecandidate = (event: RTCPeerConnectionIceEvent) => {
-        if (!event || !event.candidate) {
-          pc.close();
-          return;
-        }
-        // Parse IP from SDP candidate string
-        // Format: "candidate:... IP port ..."
-        const candidateStr = event.candidate.candidate;
-        const ipMatch = candidateStr.match(
-          /(?:^|[\s:])(\d{1,3}(?:\.\d{1,3}){3}|[0-9a-f:]{4,})(?=\s)/i
-        );
-        if (ipMatch) {
-          const ip = ipMatch[1];
-          // Skip link-local (169.254.x.x) and loopback (127.x.x.x)
-          if (!ip.startsWith("169.254") && !ip.startsWith("127.")) {
-            localStorage.setItem(UserService.PRIVATE_IP_KEY, ip);
-            console.debug("[ClientIP] Private/LAN IP detected:", ip);
-            pc.close();
-          }
-        }
-      };
-    } catch {
-      console.debug("[ClientIP] WebRTC private IP detection not available");
-    }
+    // Server-side logging authoritatively captures client IP from incoming HTTP connection.
   }
 
   private getPublicHeaders(): HttpHeaders {

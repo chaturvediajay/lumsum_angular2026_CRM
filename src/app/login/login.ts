@@ -250,37 +250,6 @@ export class Login implements OnInit {
 
   ngAfterViewInit() {}
 
-  fetchData1() {
-    console.log("Fetching data...");
-    this.isLoading = true;
-    this.http
-      .get("https://jsonplaceholder.typicode.com/posts", {
-        observe: "response",
-        headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
-      })
-      .pipe(
-        timeout(10000), // ⏱ timeout after 10 seconds
-        catchError((err) => {
-          if (err.name === "TimeoutError") {
-            console.error("Request timed out after 10 seconds");
-          } else {
-            console.error("HTTP Error:", err);
-          }
-          return of([]); // return empty array on error
-        }),
-      )
-      .subscribe({
-        next: (data: any) => {
-          this.posts = [...this.posts, ...data.body];
-          this.isLoading = false;
-        },
-        error: (err) => {
-          console.error("Error:", err);
-          this.isLoading = false;
-        },
-      });
-  }
-
   onUserChange(user: string) {
     this.username = user;
   }
